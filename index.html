@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoEarnerX | Official Web3 Protocol</title>
+
+    <meta property="og:title" content="CryptoEarnerX Protocol">
+    <meta property="og:description" content="Next-gen Web3 network. Unlock nodes, build networks, and earn.">
+    <meta property="og:image" content="logo.png">
+    <meta property="og:url" content="https://yourlink.com">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-dark: #020205;
+            --accent-blue: #00d2ff;
+            --accent-purple: #9d50bb;
+            --glass: rgba(255, 255, 255, 0.02);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-dark);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        .bg-animate {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at 50% 50%, #0a0a1f 0%, #020205 100%);
+        }
+
+        nav { width: 100%; padding: 2rem; display: flex; justify-content: center; z-index: 10; }
+
+        .brand-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            animation: fadeInDown 1.2s ease;
+        }
+
+        .custom-logo {
+            width: 95px; height: 95px;
+            object-fit: contain;
+            border-radius: 22px;
+            border: 2px solid var(--accent-blue);
+            padding: 8px;
+            background: rgba(0, 210, 255, 0.05);
+            box-shadow: 0 0 35px rgba(0, 210, 255, 0.25);
+            margin-bottom: 1.2rem;
+        }
+
+        .logo-name {
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: -2px;
+            background: linear-gradient(to bottom, #fff, #999);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .tag-main {
+            font-size: 0.85rem;
+            letter-spacing: 6px;
+            color: var(--accent-blue);
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+
+        .hero { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1.5rem; }
+
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(45px);
+            -webkit-backdrop-filter: blur(45px);
+            border: 1px solid var(--glass-border);
+            border-radius: 50px;
+            padding: 5rem 2rem;
+            max-width: 850px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+        }
+
+        .headline-wrapper {
+            height: 110px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 1.5rem 0;
+        }
+
+        h1 {
+            font-size: clamp(2rem, 7vw, 4.2rem);
+            font-weight: 800;
+            border-right: 3px solid var(--accent-blue);
+            padding-right: 15px;
+            white-space: nowrap;
+        }
+
+        .lang-sub {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--accent-blue);
+            padding: 8px 22px;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .counter-badge { margin-bottom: 15px; font-size: 0.9rem; font-weight: 800; color: #777; letter-spacing: 1px; }
+
+        .input-box {
+            display: flex; gap: 12px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 22px; 
+            border: 1px solid var(--glass-border); max-width: 580px; margin: 3rem auto 1.5rem;
+        }
+        input { flex: 1; background: transparent; border: none; padding: 12px 20px; color: white; outline: none; font-size: 1.1rem; }
+        .btn-join {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: white; border: none; padding: 16px 38px; border-radius: 18px; font-weight: 800; cursor: pointer; transition: 0.4s;
+        }
+        .btn-join:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(0, 210, 255, 0.3); }
+
+        .info-section { max-width: 900px; margin: 7rem auto; padding: 0 1.5rem; text-align: center; }
+        .info-card { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 45px; padding: 5rem 3rem; }
+        .info-card h3 { font-size: 2.5rem; margin-bottom: 2rem; font-weight: 800; background: linear-gradient(to right, #fff, var(--accent-blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .info-card p { color: #a0a0b0; line-height: 1.9; margin-bottom: 3.5rem; font-size: 1.25rem; }
+
+        .docs { display: flex; gap: 20px; justify-content: center; }
+        .doc-btn { background: var(--glass); border: 1px solid var(--glass-border); color: white; padding: 15px 35px; border-radius: 16px; text-decoration: none; font-weight: 700; transition: 0.3s; }
+        .doc-btn:hover { border-color: white; background: rgba(255,255,255,0.06); }
+
+        footer { padding: 6rem 2rem; text-align: center; border-top: 1px solid var(--glass-border); background: rgba(0,0,0,0.5); }
+        .social-icons { display: flex; justify-content: center; gap: 45px; margin-bottom: 3rem; }
+        .social-icons a { color: #555; font-size: 2.2rem; transition: 0.4s; }
+        .social-icons a:hover { color: var(--accent-blue); transform: scale(1.15); }
+
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 600px) {
+            .input-box { flex-direction: column; background: transparent; border: none; padding: 0; }
+            input { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 18px; margin-bottom: 15px; height: 60px; }
+            .btn-join { height: 60px; width: 100%; }
+            .headline-wrapper { height: 80px; }
+            .docs { flex-direction: column; }
+            .logo-name { font-size: 2.2rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animate"></div>
+    <nav></nav>
+
+    <main class="hero">
+        <div class="brand-center">
+            <img src="logo.png" alt="CryptoEarnerX Logo" class="custom-logo">
+            <h2 class="logo-name">CryptoEarnerX</h2>
+            <p class="tag-main">Build. Connect. Earn.</p>
+        </div>
+
+        <div class="glass-card">
+            <div id="lang-pill" class="lang-sub">ENGLISH</div>
+            <div class="headline-wrapper">
+                <h1 id="typewriter"></h1>
+            </div>
+            
+            <div class="counter-badge">
+                <i class="fas fa-users" style="color: var(--accent-blue); margin-right: 5px;"></i>
+                JOIN <span id="total-count" style="color: white;">...</span> PIONEERS IN QUEUE
+            </div>
+
+            <form id="wait-form">
+                <div class="input-box">
+                    <input type="email" id="email" placeholder="Your institutional email" required>
+                    <button type="submit" class="btn-join">Join Waitlist</button>
+                </div>
+            </form>
+            <p id="msg" style="font-weight: 800; min-height: 35px; margin-top: 10px;"></p>
+        </div>
+
+        <section class="info-section">
+            <div class="info-card">
+                <h3>What’s Coming Next?</h3>
+                <p>A next-generation Web3 network where users unlock powerful nodes, build dynamic networks, and compete to rise through the ranks. Early participants gain the highest advantage.</p>
+                <div class="docs">
+                    <a href="pitchdeck.pdf" target="_blank" class="doc-btn"><i class="far fa-file-pdf"></i> Pitch Deck</a>
+                    <a href="whitepaper.pdf" target="_blank" class="doc-btn"><i class="fas fa-book"></i> Whitepaper</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="social-icons">
+            <a href="https://t.me/cex_network1" target="_blank"><i class="fab fa-telegram-plane"></i></a>
+            <a href="#" target="_blank"><i class="fa-brands fa-x-twitter"></i></a>
+            <a href="https://www.instagram.com/cexnetwork?igsh=MWdzcXQ2b29uMXJoeA==" target="_blank"><i class="fab fa-instagram"></i></a>
+            <a href="https://www.youtube.com/@Crypto_EarnerX" target="_blank"><i class="fab fa-youtube"></i></a>
+        </div>
+        <p style="color: #444; font-size: 0.9rem; font-weight: 600; letter-spacing: 1.5px;">&copy; 2026 CRYPTOEARNERX PROTOCOL. ALL RIGHTS RESERVED.</p>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCwDzAQsOOFCweLde_JVguMAdhZ9vTs3Js",
+            authDomain: "crypto-earnerx--1.firebaseapp.com",
+            projectId: "crypto-earnerx--1",
+            storageBucket: "crypto-earnerx--1.firebasestorage.app",
+            messagingSenderId: "296299836088",
+            appId: "1:296299836088:web:c8268cfde3a59918b43a4d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        async function updateLiveCount() {
+            try {
+                const snap = await getDocs(collection(db, "waitlist"));
+                document.getElementById('total-count').innerText = snap.size;
+            } catch (e) { console.log("Counter error"); }
+        }
+        updateLiveCount();
+
+        document.getElementById('wait-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value.trim().toLowerCase();
+            const msg = document.getElementById('msg');
+            msg.style.color = "white";
+            msg.innerText = "Syncing with Protocol...";
+            
+            try {
+                const q = query(collection(db, "waitlist"), where("email", "==", email));
+                const res = await getDocs(q);
+                if (!res.empty) {
+                    msg.style.color = "#ff4d4d";
+                    msg.innerText = "Error: Already Whitelisted.";
+                    return;
+                }
+
+                const allDocs = await getDocs(collection(db, "waitlist"));
+                const pos = allDocs.size + 1;
+
+                await addDoc(collection(db, "waitlist"), { email, createdAt: serverTimestamp(), queueNumber: pos });
+
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#00d2ff', '#9d50bb', '#ffffff'] });
+
+                msg.style.color = "#00ff88";
+                msg.innerHTML = `Welcome Pioneer! You are <span style="font-size: 1.3rem;">#${pos}</span> in line.`;
+                updateLiveCount();
+                e.target.reset();
+            } catch (err) { msg.innerText = "Sync Error. Try again."; }
+        });
+
+        const languages = [
+            { t: "Coming Soon", l: "ENGLISH" }, { t: "जल्द आ रहा है", l: "HINDI" },
+            { t: "Próximamente", l: "SPANISH" }, { t: "Arrive bientôt", l: "FRENCH" },
+            { t: "Kommt bald", l: "GERMAN" }, { t: "Prossimamente", l: "ITALIAN" },
+            { t: "近日公開", l: "JAPANESE" }, { t: "곧 출시됩니다", l: "KOREAN" },
+            { t: "即将推出", l: "CHINESE" }, { t: "Em breve", l: "PORTUGUESE" }
+        ];
+        let w = 0, c = 0, del = false;
+        const h1 = document.getElementById('typewriter');
+        const pill = document.getElementById('lang-pill');
+
+        function type() {
+            const cur = languages[w];
+            pill.innerText = cur.l;
+            h1.innerText = del ? cur.t.substring(0, c - 1) : cur.t.substring(0, c + 1);
+            c = del ? c - 1 : c + 1;
+            let s = del ? 50 : 120;
+            if (!del && c === cur.t.length) { s = 2500; del = true; }
+            else if (del && c === 0) { del = false; w = (w + 1) % languages.length; s = 500; }
+            setTimeout(type, s);
+        }
+        type();
+    </script>
+</body>
+</html>

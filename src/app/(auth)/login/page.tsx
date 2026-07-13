@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -22,8 +22,19 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("cex_remember");
+    if (saved) {
+      const { email: savedEmail, password: savedPass } = JSON.parse(saved);
+      setEmail(savedEmail);
+      setPassword(savedPass);
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +50,12 @@ function LoginForm() {
       setError(authError.message);
       setLoading(false);
       return;
+    }
+
+    if (rememberMe) {
+      localStorage.setItem("cex_remember", JSON.stringify({ email, password }));
+    } else {
+      localStorage.removeItem("cex_remember");
     }
 
     if (data.user) {
@@ -104,7 +121,16 @@ function LoginForm() {
               </button>
             </div>
 
-            <div className="text-right">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-blue-600 focus:ring-blue-500 focus:ring-offset-0"
+                />
+                <span className="text-sm text-zinc-400">Remember me</span>
+              </label>
               <Link href="/forgot-password" className="text-sm text-blue-400 hover:text-blue-300">
                 Forgot password?
               </Link>

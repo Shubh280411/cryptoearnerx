@@ -27,6 +27,8 @@ function RegisterForm() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [referralCode, setReferralCode] = useState(refCode);
+  const [referralValid, setReferralValid] = useState<boolean | null>(refCode ? null : null);
+  const [referralName, setReferralName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   const [otpSent, setOtpSent] = useState(false);
@@ -41,6 +43,13 @@ function RegisterForm() {
 
   const generateReferralCode = () => {
     return "CEX" + Math.random().toString(36).substring(2, 8).toUpperCase();
+  };
+
+  const validateReferral = async (code: string) => {
+    if (!code.trim()) { setReferralValid(null); setReferralName(""); return; }
+    const { data } = await supabase.from("users").select("id, name").eq("referral_code", code.trim()).single();
+    if (data) { setReferralValid(true); setReferralName(data.name || "User"); }
+    else { setReferralValid(false); setReferralName(""); }
   };
 
   const sendOTP = async () => {
@@ -128,6 +137,24 @@ function RegisterForm() {
       return;
     }
 
+    if (!referralCode.trim()) {
+      setError("Referral code is required. Ask someone for their referral code.");
+      setLoading(false);
+      return;
+    }
+
+    const { data: sponsorCheck } = await supabase
+      .from("users")
+      .select("id, left_child_id, right_child_id")
+      .eq("referral_code", referralCode.trim())
+      .single();
+
+    if (!sponsorCheck) {
+      setError("Invalid referral code. Please check and try again.");
+      setLoading(false);
+      return;
+    }
+
     const newReferralCode = generateReferralCode();
 
     const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -148,22 +175,14 @@ function RegisterForm() {
       let sponsorId = null;
       let side: "left_child_id" | "right_child_id" = "left_child_id";
 
-      if (referralCode) {
-        const { data: sponsor } = await supabase
-          .from("users")
-          .select("id, left_child_id, right_child_id")
-          .eq("referral_code", referralCode)
-          .single();
-
-        if (sponsor) {
-          sponsorId = sponsor.id;
-          if (!sponsor.left_child_id) {
-            side = "left_child_id";
-          } else if (!sponsor.right_child_id) {
-            side = "right_child_id";
-          } else {
-            side = "left_child_id";
-          }
+      if (sponsorCheck) {
+        sponsorId = sponsorCheck.id;
+        if (!sponsorCheck.left_child_id) {
+          side = "left_child_id";
+        } else if (!sponsorCheck.right_child_id) {
+          side = "right_child_id";
+        } else {
+          side = "left_child_id";
         }
       }
 
@@ -359,13 +378,23 @@ function RegisterForm() {
               required
             />
 
-            <Input
-              label="Referral Code (Optional)"
-              type="text"
-              placeholder="Enter referral code"
-              value={referralCode}
-              onChange={(e) => setReferralCode(e.target.value)}
-            />
+            <div>
+              <Input
+                label="Referral Code"
+                type="text"
+                placeholder="Ask someone for their code"
+                value={referralCode}
+                onChange={(e) => { setReferralCode(e.target.value); setReferralValid(null); setReferralName(""); }}
+                onBlur={() => validateReferral(referralCode)}
+                required
+              />
+              {referralValid === true && (
+                <p className="text-xs text-green-400 mt-1">Referred by: {referralName}</p>
+              )}
+              {referralValid === false && referralCode.trim() && (
+                <p className="text-xs text-red-400 mt-1">Invalid referral code</p>
+              )}
+            </div>
 
             <Button type="submit" variant="primary" className="w-full" size="lg" disabled={loading || !otpVerified}>
               {loading ? "Creating Account..." : "Create Account"}

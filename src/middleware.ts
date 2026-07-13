@@ -32,7 +32,7 @@ export async function middleware(req: NextRequest) {
   const protectedRoutes = [
     "/wallet", "/deposit", "/withdraw", "/investments", "/earnings",
     "/team", "/referral", "/notifications", "/support", "/profile",
-    "/settings", "/staking", "/dashboard",
+    "/settings", "/staking", "/invest", "/dashboard",
   ];
 
   const isProtected = protectedRoutes.some((r) => pathname === r || pathname.startsWith(r + "/"));
@@ -104,6 +104,8 @@ export const config = {
     "/profile/:path*",
     "/settings/:path*",
     "/staking/:path*",
+    "/invest",
+    "/invest/:path*",
     "/banned",
     "/login",
     "/register",

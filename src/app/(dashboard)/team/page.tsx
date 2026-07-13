@@ -6,14 +6,30 @@ import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icons";
 import { formatPOL } from "@/lib/utils";
 
-interface TreeNode {
-  id: string;
-  name: string;
-  email: string;
-  rank: string;
-  left_volume: number;
-  right_volume: number;
-  is_active: boolean;
+async function getSubtree(userId: string, side: "left" | "right"): Promise<any[]> {
+  const { data: root } = await supabase.from("users").select("left_child_id, right_child_id").eq("id", userId).single();
+  const childId = side === "left" ? root?.left_child_id : root?.right_child_id;
+  if (!childId) return [];
+
+  const result: any[] = [];
+  const queue = [childId];
+
+  while (queue.length > 0) {
+    const currentId = queue.shift()!;
+    const { data: member } = await supabase
+      .from("users")
+      .select("id, name, email, rank, is_active, left_child_id, right_child_id, left_volume, right_volume, created_at")
+      .eq("id", currentId)
+      .single();
+
+    if (member) {
+      result.push(member);
+      if (member.left_child_id) queue.push(member.left_child_id);
+      if (member.right_child_id) queue.push(member.right_child_id);
+    }
+  }
+
+  return result;
 }
 
 export default function MlmPage() {
@@ -34,21 +50,19 @@ export default function MlmPage() {
     const { data: userData } = await supabase.from("users").select("*").eq("id", authUser.id).single();
     setUser(userData);
 
-    const [leftRes, rightRes, earningRes] = await Promise.all([
-      supabase.rpc("get_team_members", { p_sponsor_id: authUser.id, p_side: "left" }).then(r => r.data ? { data: r.data } : supabase.from("users").select("id, name, email, rank, is_active, left_volume, right_volume").eq("sponsor_id", authUser.id).limit(100)),
-      supabase.rpc("get_team_members", { p_sponsor_id: authUser.id, p_side: "right" }).then(r => r.data ? { data: r.data } : supabase.from("users").select("id, name, email, rank, is_active, left_volume, right_volume").eq("sponsor_id", authUser.id).limit(100)),
+    const [leftMembers, rightMembers, earningRes] = await Promise.all([
+      getSubtree(authUser.id, "left"),
+      getSubtree(authUser.id, "right"),
       supabase.from("transactions").select("amount, type").eq("user_id", authUser.id).in("type", ["referral_bonus", "binary_bonus", "leadership_bonus"]),
     ]);
 
-    const leftData = Array.isArray(leftRes.data) ? leftRes.data : [];
-    const rightData = Array.isArray(rightRes.data) ? rightRes.data : [];
     const earnData = earningRes.data || [];
 
-    setLeftTeam(leftData);
-    setRightTeam(rightData);
+    setLeftTeam(leftMembers);
+    setRightTeam(rightMembers);
     setStats({
-      leftCount: leftData.length,
-      rightCount: rightData.length,
+      leftCount: leftMembers.length,
+      rightCount: rightMembers.length,
       totalEarnings: earnData.reduce((s: number, t: any) => s + (t.amount > 0 ? t.amount : 0), 0),
       matches: earnData.filter((t: any) => t.type === "binary_bonus").length,
     });

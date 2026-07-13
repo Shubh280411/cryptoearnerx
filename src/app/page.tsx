@@ -60,20 +60,20 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
             <div>
-              <p className="text-3xl font-bold text-white">1000+</p>
-              <p className="text-zinc-400 mt-1">Active Users</p>
+              <p className="text-3xl font-bold text-white">5</p>
+              <p className="text-zinc-400 mt-1">Investment Packages</p>
             </div>
             <div>
-              <p className="text-3xl font-bold text-blue-400">5M+</p>
-              <p className="text-zinc-400 mt-1">Total Invested (POL)</p>
-            </div>
-            <div>
-              <p className="text-3xl font-bold text-green-400">10M+</p>
-              <p className="text-zinc-400 mt-1">Total Paid Out (POL)</p>
-            </div>
-            <div>
-              <p className="text-3xl font-bold text-purple-400">2%</p>
+              <p className="text-3xl font-bold text-blue-400">2%</p>
               <p className="text-zinc-400 mt-1">Max Daily ROI</p>
+            </div>
+            <div>
+              <p className="text-3xl font-bold text-green-400">10%</p>
+              <p className="text-zinc-400 mt-1">Referral Bonus</p>
+            </div>
+            <div>
+              <p className="text-3xl font-bold text-purple-400">100</p>
+              <p className="text-zinc-400 mt-1">Free CEX on Signup</p>
             </div>
           </div>
         </div>

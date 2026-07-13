@@ -28,17 +28,86 @@ function RegisterForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [referralCode, setReferralCode] = useState(refCode);
   const [showPassword, setShowPassword] = useState(false);
+
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpTimer, setOtpTimer] = useState(0);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const generateReferralCode = () => {
     return "CEX" + Math.random().toString(36).substring(2, 8).toUpperCase();
+  };
+
+  const sendOTP = async () => {
+    if (!email || !email.includes("@") || email.includes("+")) {
+      setError("Enter a valid email address");
+      return;
+    }
+    setOtpLoading(true);
+    setError("");
+
+    const res = await fetch("/api/otp/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email.toLowerCase().trim(), purpose: "register" }),
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      setOtpSent(true);
+      setSuccess("OTP sent! Check your email.");
+      setOtpTimer(60);
+      const interval = setInterval(() => {
+        setOtpTimer((t) => {
+          if (t <= 1) { clearInterval(interval); return 0; }
+          return t - 1;
+        });
+      }, 1000);
+    } else {
+      setError(data.error || "Failed to send OTP");
+    }
+    setOtpLoading(false);
+  };
+
+  const verifyOTP = async () => {
+    if (!otp || otp.length !== 6) {
+      setError("Enter 6-digit OTP");
+      return;
+    }
+    setOtpLoading(true);
+    setError("");
+
+    const res = await fetch("/api/otp/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email.toLowerCase().trim(), otp, purpose: "register" }),
+    });
+
+    const data = await res.json();
+    if (res.ok && data.verified) {
+      setOtpVerified(true);
+      setSuccess("Email verified!");
+    } else {
+      setError(data.error || "Invalid OTP");
+    }
+    setOtpLoading(false);
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+
+    if (!otpVerified) {
+      setError("Please verify your email with OTP first");
+      setLoading(false);
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError("Passwords do not match");
@@ -52,10 +121,17 @@ function RegisterForm() {
       return;
     }
 
+    const emailLower = email.toLowerCase().trim();
+    if (emailLower.includes("+")) {
+      setError("Email aliases (with +) are not allowed");
+      setLoading(false);
+      return;
+    }
+
     const newReferralCode = generateReferralCode();
 
     const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
+      email: emailLower,
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/dashboard`,
@@ -93,7 +169,7 @@ function RegisterForm() {
 
       const { error: insertError } = await supabase.from("users").insert({
         id: authData.user.id,
-        email,
+        email: emailLower,
         name,
         password_hash: "managed_by_supabase",
         sponsor_id: sponsorId,
@@ -176,6 +252,13 @@ function RegisterForm() {
               </div>
             )}
 
+            {success && (
+              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 text-green-400 text-sm flex items-center gap-2">
+                <Icon name="check" size={16} />
+                {success}
+              </div>
+            )}
+
             <Input
               label="Full Name"
               type="text"
@@ -185,14 +268,69 @@ function RegisterForm() {
               required
             />
 
-            <Input
-              label="Email"
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+            {/* Email + OTP */}
+            <div>
+              <Input
+                label="Email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setOtpSent(false); setOtpVerified(false); setOtp(""); }}
+                disabled={otpVerified}
+                required
+              />
+              {!otpVerified && (
+                <div className="mt-2">
+                  {!otpSent ? (
+                    <button
+                      type="button"
+                      onClick={sendOTP}
+                      disabled={otpLoading || !email || !email.includes("@") || email.includes("+")}
+                      className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed text-blue-400 border border-zinc-700 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      {otpLoading ? "Sending..." : "Send Verification Code"}
+                    </button>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="6-digit OTP"
+                          value={otp}
+                          onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                          maxLength={6}
+                          className="flex-1 px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm tracking-widest text-center"
+                        />
+                        <button
+                          type="button"
+                          onClick={verifyOTP}
+                          disabled={otpLoading || otp.length !== 6}
+                          className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
+                        >
+                          {otpLoading ? "..." : "Verify"}
+                        </button>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={sendOTP}
+                          disabled={otpTimer > 0 || otpLoading}
+                          className="text-xs text-zinc-500 hover:text-zinc-300 disabled:cursor-not-allowed"
+                        >
+                          {otpTimer > 0 ? `Resend in ${otpTimer}s` : "Resend OTP"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              {otpVerified && (
+                <div className="mt-2 flex items-center gap-2 text-green-400 text-sm">
+                  <Icon name="check" size={14} />
+                  Email verified
+                </div>
+              )}
+            </div>
 
             <div className="relative">
               <Input
@@ -229,7 +367,7 @@ function RegisterForm() {
               onChange={(e) => setReferralCode(e.target.value)}
             />
 
-            <Button type="submit" variant="primary" className="w-full" size="lg" disabled={loading}>
+            <Button type="submit" variant="primary" className="w-full" size="lg" disabled={loading || !otpVerified}>
               {loading ? "Creating Account..." : "Create Account"}
             </Button>
           </form>

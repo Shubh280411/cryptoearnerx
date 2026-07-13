@@ -192,21 +192,6 @@ export default function ReferralPage() {
         </Card>
       </div>
 
-      {/* Team Summary */}
-      <Card title="Team Summary">
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-          {[1, 2, 3, 4, 5].map((level) => (
-            <div key={level} className="bg-zinc-800/50 rounded-lg p-3 text-center">
-              <p className="text-xs text-zinc-500">Level {level}</p>
-              <p className="text-xl font-bold text-blue-400 mt-1">{teamCounts[level]?.count || 0}</p>
-              <p className="text-[10px] text-zinc-600 mt-0.5">
-                {level === 1 ? "Direct" : `L${level} deep`}
-              </p>
-            </div>
-          ))}
-        </div>
-      </Card>
-
       {/* Referral List with Dropdown */}
       <Card title="Your Referrals">
         <div className="flex items-center gap-3 mb-4">

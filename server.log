@@ -1,0 +1,113 @@
+
+> crypto-earner-x@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.0
+  - Local:        http://localhost:3000
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 2.1s
+ ○ Compiling / ...
+ ✓ Compiled / in 3.6s (563 modules)
+ ✓ Compiled in 314ms (267 modules)
+ GET / 200 in 3968ms
+ ○ Compiling /src/middleware ...
+ ✓ Compiled /src/middleware in 701ms (127 modules)
+ ○ Compiling /login ...
+ ✓ Compiled /login in 1721ms (691 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (106kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (253kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ✓ Compiled /dashboard in 359ms (704 modules)
+ ✓ Compiled /dashboard/referral in 282ms (710 modules)
+ ✓ Compiled /dashboard/wallet in 263ms (716 modules)
+ ✓ Compiled /dashboard/notifications in 358ms (722 modules)
+ ✓ Compiled /dashboard/support in 223ms (728 modules)
+ ✓ Compiled /dashboard/profile in 389ms (720 modules)
+ ✓ Compiled /dashboard/deposit in 358ms (726 modules)
+ ✓ Compiled /dashboard/withdraw in 232ms (732 modules)
+ ✓ Compiled /dashboard/invest in 260ms (740 modules)
+ ✓ Compiled /dashboard/investments in 322ms (746 modules)
+ ✓ Compiled /dashboard/staking in 324ms (752 modules)
+ ✓ Compiled in 648ms (364 modules)
+ ✓ Compiled in 689ms (738 modules)
+ ✓ Compiled in 316ms (738 modules)
+ ✓ Compiled in 274ms (738 modules)
+ ✓ Compiled in 729ms (738 modules)
+ ✓ Compiled in 431ms (738 modules)
+ ✓ Compiled in 820ms (738 modules)
+ ✓ Compiled in 159ms (364 modules)
+ ✓ Compiled in 188ms (364 modules)
+ ✓ Compiled in 311ms (738 modules)
+ ✓ Compiled in 124ms (364 modules)
+ ✓ Compiled in 183ms (364 modules)
+ ✓ Compiled in 441ms (364 modules)
+ ✓ Compiled in 176ms (364 modules)
+ ✓ Compiled in 163ms (364 modules)
+ ✓ Compiled in 211ms (364 modules)
+ ✓ Compiled in 167ms (364 modules)
+ ✓ Compiled in 116ms (364 modules)
+ ✓ Compiled in 205ms (364 modules)
+ ✓ Compiled in 109ms (364 modules)
+ GET /dashboard 200 in 147ms
+ GET /dashboard 200 in 138ms
+ ✓ Compiled /_not-found in 487ms (727 modules)
+ GET /_next/static/css/css-src_app_globals_css.css?v=1783929390149 404 in 630ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 390ms
+ GET /_next/static/chunks/main-app.js?v=1783929390149 404 in 392ms
+ GET /_next/static/chunks/webpack.js?v=1783929390149 404 in 654ms
+ GET /_next/static/chunks/app/(dashboard)/layout.js 404 in 393ms
+ GET /_next/static/chunks/app/(dashboard)/dashboard/page.js 404 in 393ms
+ GET /_next/static/chunks/app/error.js 404 in 38ms
+ GET /_next/static/chunks/app/not-found.js 404 in 31ms
+ ✓ Compiled /favicon.ico in 262ms (406 modules)
+ GET /favicon.ico 200 in 333ms
+ GET /dashboard 200 in 154ms
+ GET /dashboard 200 in 146ms
+ GET /_next/static/css/css-src_app_globals_css.css?v=1783929393092 404 in 43ms
+ GET /_next/static/chunks/app/(dashboard)/layout.js 404 in 33ms
+ GET /_next/static/chunks/app/(dashboard)/dashboard/page.js 404 in 34ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 36ms
+ GET /_next/static/chunks/main-app.js?v=1783929393092 404 in 36ms
+ GET /_next/static/chunks/app/not-found.js 404 in 39ms
+ GET /_next/static/chunks/app/error.js 404 in 40ms
+ GET /favicon.ico 200 in 8ms
+ GET /dashboard 200 in 80ms
+ GET /dashboard 200 in 74ms
+ GET /_next/static/css/css-src_app_globals_css.css?v=1783929393385 404 in 39ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 43ms
+ GET /_next/static/chunks/main-app.js?v=1783929393385 404 in 44ms
+ GET /_next/static/chunks/app/error.js 404 in 42ms
+ GET /_next/static/chunks/app/(dashboard)/layout.js 404 in 44ms
+ GET /_next/static/chunks/app/(dashboard)/dashboard/page.js 404 in 44ms
+ GET /_next/static/chunks/app/not-found.js 404 in 41ms
+ GET /favicon.ico 200 in 9ms
+ ✓ Compiled /dashboard/mlm in 363ms (763 modules)
+ GET /dashboard/mlm 200 in 504ms
+ GET /dashboard/mlm 200 in 499ms
+ GET /_next/static/css/css-src_app_globals_css.css?v=1783929398895 404 in 52ms
+ GET /_next/static/chunks/main-app.js?v=1783929398895 404 in 33ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 30ms
+ GET /_next/static/chunks/app/not-found.js 404 in 33ms
+ GET /_next/static/chunks/app/error.js 404 in 34ms
+ GET /_next/static/chunks/app/(dashboard)/layout.js 404 in 33ms
+ GET /dashboard/mlm 200 in 91ms
+ GET /dashboard/mlm 200 in 84ms
+ GET /_next/static/css/css-src_app_globals_css.css?v=1783929510147 404 in 37ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 27ms
+ GET /_next/static/chunks/main-app.js?v=1783929510147 404 in 31ms
+ GET /_next/static/chunks/app/error.js 404 in 27ms
+ GET /_next/static/chunks/app/(dashboard)/layout.js 404 in 28ms
+ GET /_next/static/chunks/app/not-found.js 404 in 27ms
+ GET /favicon.ico 200 in 19ms
+ ✓ Compiled /dashboard/notifications in 251ms (414 modules)
+ GET /dashboard/notifications 200 in 452ms
+ GET /dashboard/notifications 200 in 443ms
+ GET /_next/static/css/css-src_app_globals_css.css?v=1783929512700 404 in 44ms
+ GET /_next/static/chunks/main-app.js?v=1783929512700 404 in 119ms
+ GET /_next/static/chunks/app/error.js 404 in 129ms
+ GET /_next/static/chunks/app/(dashboard)/dashboard/notifications/page.js 404 in 131ms
+ GET /_next/static/chunks/app/(dashboard)/layout.js 404 in 133ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 135ms
+ GET /_next/static/chunks/app/not-found.js 404 in 132ms
+[?25h

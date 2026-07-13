@@ -6,12 +6,11 @@ import { supabase } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icons";
 import { formatPOL } from "@/lib/utils";
-import { PACKAGES, RANKS } from "@/lib/constants";
+import { PACKAGES } from "@/lib/constants";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 interface DashboardData {
   name: string;
-  rank: string;
   referralCode: string;
   leftVolume: number;
   rightVolume: number;
@@ -29,7 +28,6 @@ interface DashboardData {
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData>({
     name: "User",
-    rank: "member",
     referralCode: "",
     leftVolume: 0,
     rightVolume: 0,
@@ -47,6 +45,7 @@ export default function DashboardPage() {
   const [recentTx, setRecentTx] = useState<any[]>([]);
   const [earningChart, setEarningChart] = useState<{ day: string; amount: number }[]>([]);
   const [announcement, setAnnouncement] = useState<string>("");
+  const [recentJoinees, setRecentJoinees] = useState<{ id: string; name: string; created_at: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
@@ -63,8 +62,9 @@ export default function DashboardPage() {
       allEarnedRes,
       roiTxs,
       settingsRes,
+      recentJoinRes,
     ] = await Promise.all([
-      supabase.from("users").select("name, rank, referral_code, left_volume, right_volume").eq("id", user.id).single(),
+      supabase.from("users").select("name, referral_code, left_volume, right_volume").eq("id", user.id).single(),
       supabase.from("wallet").select("*").eq("user_id", user.id).single(),
       supabase.from("investments").select("*").eq("user_id", user.id).eq("status", "active"),
       supabase.from("transactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
@@ -72,6 +72,7 @@ export default function DashboardPage() {
       supabase.from("transactions").select("amount").eq("user_id", user.id).eq("status", "completed"),
       supabase.from("transactions").select("amount, created_at").eq("user_id", user.id).eq("type", "roi_payout").order("created_at", { ascending: false }).limit(50),
       supabase.from("settings").select("value").eq("key", "announcement").maybeSingle(),
+      supabase.from("users").select("id, name, created_at").order("created_at", { ascending: false }).limit(5),
     ]);
 
     const u = userRes.data;
@@ -123,7 +124,6 @@ export default function DashboardPage() {
 
     setData({
       name: u?.name || "User",
-      rank: u?.rank || "member",
       referralCode: u?.referral_code || "",
       leftVolume: u?.left_volume || 0,
       rightVolume: u?.right_volume || 0,
@@ -141,6 +141,7 @@ export default function DashboardPage() {
     setActiveInvestments(investments.slice(0, 4));
     setRecentTx(transactions);
     setEarningChart(chartData);
+    setRecentJoinees((recentJoinRes.data || []) as any);
     setAnnouncement(settingsRes.data?.value || "");
     setLoading(false);
   }, []);
@@ -154,21 +155,6 @@ export default function DashboardPage() {
     navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const getProgressToNextRank = () => {
-    const currentIdx = RANKS.findIndex((r) => r.name === data.rank);
-    if (currentIdx >= RANKS.length - 1) return { progress: 100, nextRank: null, directsNeeded: 0, teamNeeded: 0 };
-    const next = RANKS[currentIdx + 1];
-    const directsProgress = Math.min(100, (data.directReferrals / next.minDirects) * 100);
-    const teamProgress = Math.min(100, (data.teamSize / next.minTeam) * 100);
-    const progress = Math.min(directsProgress, teamProgress);
-    return {
-      progress: Math.round(progress),
-      nextRank: next,
-      directsNeeded: Math.max(0, next.minDirects - data.directReferrals),
-      teamNeeded: Math.max(0, next.minTeam - data.teamSize),
-    };
   };
 
   const getInvestmentProgress = (inv: any) => {
@@ -201,8 +187,6 @@ export default function DashboardPage() {
       </div>
     );
   }
-
-  const rankInfo = getProgressToNextRank();
 
   return (
     <div className="space-y-6">
@@ -396,48 +380,31 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Rank Progress + Earning Chart */}
+      {/* Live Feed + Earning Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Rank Progress */}
-        <Card title="Rank Progress">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Icon name="shield" size={20} className="text-amber-400" />
-                <span className="text-white font-semibold capitalize">{data.rank}</span>
+        {/* Live Feed - Recent Joinings */}
+        <Card title="Live Feed">
+          <div className="space-y-3">
+            {recentJoinees.length === 0 ? (
+              <div className="text-center py-8">
+                <Icon name="users" size={32} className="text-zinc-600 mx-auto mb-2" />
+                <p className="text-zinc-400 text-sm">No recent joinings yet</p>
               </div>
-              {rankInfo.nextRank && (
-                <span className="text-zinc-400 text-sm">
-                  Next: <span className="text-amber-400 capitalize">{rankInfo.nextRank.name}</span>
-                </span>
-              )}
-            </div>
-            <div>
-              <div className="flex justify-between text-xs text-zinc-500 mb-1">
-                <span>Progress</span>
-                <span>{rankInfo.progress}%</span>
-              </div>
-              <div className="h-2 bg-zinc-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full transition-all"
-                  style={{ width: `${rankInfo.progress}%` }}
-                />
-              </div>
-            </div>
-            {rankInfo.nextRank && (
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="bg-zinc-800/50 rounded-lg p-3">
-                  <p className="text-zinc-400">Directs Needed</p>
-                  <p className="text-white font-bold mt-1">{rankInfo.directsNeeded}</p>
+            ) : (
+              recentJoinees.map((j) => (
+                <div key={j.id} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-green-600/10 rounded-full flex items-center justify-center">
+                      <Icon name="user" size={14} className="text-green-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-white">{j.name || "New User"}</p>
+                      <p className="text-xs text-zinc-500">{new Date(j.created_at).toLocaleString()}</p>
+                    </div>
+                  </div>
+                  <span className="text-xs text-green-400 font-medium">Joined</span>
                 </div>
-                <div className="bg-zinc-800/50 rounded-lg p-3">
-                  <p className="text-zinc-400">Team Needed</p>
-                  <p className="text-white font-bold mt-1">{rankInfo.teamNeeded}</p>
-                </div>
-              </div>
-            )}
-            {!rankInfo.nextRank && (
-              <p className="text-green-400 text-sm">You&apos;ve reached the highest rank!</p>
+              ))
             )}
           </div>
         </Card>

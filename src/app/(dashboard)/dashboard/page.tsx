@@ -42,7 +42,6 @@ export default function DashboardPage() {
     todayEarning: 0,
   });
   const [activeInvestments, setActiveInvestments] = useState<any[]>([]);
-  const [recentTx, setRecentTx] = useState<any[]>([]);
   const [earningChart, setEarningChart] = useState<{ day: string; amount: number }[]>([]);
   const [announcement, setAnnouncement] = useState<string>("");
   const [recentJoinees, setRecentJoinees] = useState<{ id: string; name: string; created_at: string }[]>([]);
@@ -57,7 +56,6 @@ export default function DashboardPage() {
       userRes,
       walletRes,
       investRes,
-      txRes,
       teamRes,
       allEarnedRes,
       roiTxs,
@@ -67,7 +65,6 @@ export default function DashboardPage() {
       supabase.from("users").select("name, referral_code, left_volume, right_volume").eq("id", user.id).single(),
       supabase.from("wallet").select("*").eq("user_id", user.id).single(),
       supabase.from("investments").select("*").eq("user_id", user.id).eq("status", "active"),
-      supabase.from("transactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
       supabase.from("users").select("id").eq("sponsor_id", user.id),
       supabase.from("transactions").select("amount").eq("user_id", user.id).eq("status", "completed"),
       supabase.from("transactions").select("amount, created_at").eq("user_id", user.id).eq("type", "roi_payout").order("created_at", { ascending: false }).limit(50),
@@ -78,7 +75,6 @@ export default function DashboardPage() {
     const u = userRes.data;
     const wallet = walletRes.data;
     const investments = investRes.data || [];
-    const transactions = txRes.data || [];
     const team = teamRes.data || [];
     const allEarned = allEarnedRes.data || [];
     const roiTx = roiTxs.data || [];
@@ -139,7 +135,6 @@ export default function DashboardPage() {
     });
 
     setActiveInvestments(investments.slice(0, 4));
-    setRecentTx(transactions);
     setEarningChart(chartData);
     setRecentJoinees((recentJoinRes.data || []) as any);
     setAnnouncement(settingsRes.data?.value || "");
@@ -175,6 +170,19 @@ export default function DashboardPage() {
 
   const getPackageColor = (type: string) => {
     return PACKAGES.find((p) => p.type === type)?.color || "#22c55e";
+  };
+
+  const timeAgo = (dateStr: string) => {
+    const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+    if (seconds < 60) return "just now";
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} min ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hr${hours > 1 ? "s" : ""} ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 30) return `${days} day${days > 1 ? "s" : ""} ago`;
+    const months = Math.floor(days / 30);
+    return `${months} month${months > 1 ? "s" : ""} ago`;
   };
 
   if (loading) {
@@ -399,7 +407,7 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <p className="text-sm text-white">{j.name || "New User"}</p>
-                      <p className="text-xs text-zinc-500">{new Date(j.created_at).toLocaleString()}</p>
+                      <p className="text-xs text-zinc-500">{timeAgo(j.created_at)}</p>
                     </div>
                   </div>
                   <span className="text-xs text-green-400 font-medium">Joined</span>
@@ -464,40 +472,6 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      {/* Recent Transactions */}
-      <Card title="Recent Transactions">
-        {recentTx.length === 0 ? (
-          <div className="text-center py-8">
-            <Icon name="clock" size={32} className="text-zinc-600 mx-auto mb-2" />
-            <p className="text-zinc-400 text-sm">No transactions yet</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {recentTx.map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    tx.amount > 0 ? "bg-green-600/10" : "bg-red-600/10"
-                  }`}>
-                    <Icon
-                      name={tx.amount > 0 ? "download" : "upload"}
-                      size={14}
-                      className={tx.amount > 0 ? "text-green-400" : "text-red-400"}
-                    />
-                  </div>
-                  <div>
-                    <p className="text-sm text-white capitalize">{tx.type.replace(/_/g, " ")}</p>
-                    <p className="text-xs text-zinc-500">{new Date(tx.created_at).toLocaleDateString()}</p>
-                  </div>
-                </div>
-                <p className={`text-sm font-medium ${tx.amount > 0 ? "text-green-400" : "text-red-400"}`}>
-                  {tx.amount > 0 ? "+" : ""}{formatPOL(tx.amount)} POL
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
     </div>
   );
 }

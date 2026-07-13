@@ -42,6 +42,10 @@ export default function WalletPage() {
     setLoading(false);
   };
 
+  const isCECTx = (type: string) => {
+    return ["registration_bonus", "referral_bonus", "level_commission", "cex_unlock", "invest_locked_cec"].includes(type);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -119,7 +123,7 @@ export default function WalletPage() {
                 </div>
                 <div className="text-right">
                   <p className={`text-sm font-medium ${tx.amount > 0 ? "text-green-400" : "text-red-400"}`}>
-                    {tx.amount > 0 ? "+" : ""}{formatPOL(tx.amount)} POL
+                    {tx.amount > 0 ? "+" : ""}{formatPOL(tx.amount)} {isCECTx(tx.type) ? "CEX" : "POL"}
                   </p>
                   <p className="text-xs text-zinc-500">{new Date(tx.created_at).toLocaleDateString()}</p>
                 </div>

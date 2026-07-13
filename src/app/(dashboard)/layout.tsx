@@ -18,6 +18,8 @@ const navItems = [
   { href: "/earnings", label: "Earnings", icon: "chart" },
   { href: "/team", label: "My Team", icon: "users" },
   { href: "/referral", label: "Referral", icon: "link" },
+  { href: "/leaderboard", label: "Leaderboard", icon: "trophy" },
+  { href: "/convert", label: "CEX to POL", icon: "coins" },
   { href: "/notifications", label: "Notifications", icon: "bell" },
   { href: "/support", label: "Support", icon: "headphones" },
   { href: "/profile", label: "Profile", icon: "user" },

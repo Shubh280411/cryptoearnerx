@@ -84,6 +84,14 @@ export const LEVEL_COMMISSION_RATES = [
   { level: 4, rate: 2 },
   { level: 5, rate: 1 },
 ];
+export const CEX_LEVEL_BONUS: Record<number, number> = {
+  1: 50,
+  2: 40,
+  3: 30,
+  4: 20,
+  5: 10,
+};
+
 export const MIN_DEPOSIT = 0.1;
 export const MIN_WITHDRAWAL = 25;
 export const WITHDRAWAL_FEE = 1;

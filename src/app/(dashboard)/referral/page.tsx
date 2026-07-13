@@ -7,17 +7,26 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icons";
 import { formatPOL } from "@/lib/utils";
 
+const PAGE_SIZE = 10;
+
 export default function ReferralPage() {
   const [referralCode, setReferralCode] = useState("");
   const [referralLink, setReferralLink] = useState("");
   const [stats, setStats] = useState({ totalReferrals: 0, activeReferrals: 0, totalEarned: 0 });
-  const [referrals, setReferrals] = useState<any[]>([]);
+  const [allReferrals, setAllReferrals] = useState<any[]>([]);
+  const [filteredReferrals, setFilteredReferrals] = useState<any[]>([]);
+  const [selectedLevel, setSelectedLevel] = useState(0);
+  const [page, setPage] = useState(1);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadReferralData();
   }, []);
+
+  useEffect(() => {
+    filterReferrals();
+  }, [selectedLevel, allReferrals]);
 
   const loadReferralData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -30,12 +39,12 @@ export default function ReferralPage() {
     }
 
     const [refRes, earnRes] = await Promise.all([
-      supabase.from("users").select("id, name, email, rank, is_active, created_at").eq("sponsor_id", user.id),
+      supabase.from("users").select("id, name, email, rank, is_active, created_at, sponsor_id").eq("sponsor_id", user.id),
       supabase.from("transactions").select("amount").eq("user_id", user.id).eq("type", "referral_bonus"),
     ]);
 
     const refData = refRes.data || [];
-    setReferrals(refData);
+    setAllReferrals(refData);
     setStats({
       totalReferrals: refData.length,
       activeReferrals: refData.filter((r) => r.is_active).length,
@@ -43,6 +52,40 @@ export default function ReferralPage() {
     });
     setLoading(false);
   };
+
+  const filterReferrals = async () => {
+    if (selectedLevel === 0) {
+      setFilteredReferrals(allReferrals);
+      setPage(1);
+      return;
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    let currentIds = [user.id];
+    const levelReferrals: any[] = [];
+
+    for (let level = 1; level <= selectedLevel; level++) {
+      const { data: nextLevelUsers } = await supabase
+        .from("users")
+        .select("id, name, email, rank, is_active, created_at, sponsor_id")
+        .in("sponsor_id", currentIds);
+
+      if (!nextLevelUsers || nextLevelUsers.length === 0) break;
+
+      if (level === selectedLevel) {
+        levelReferrals.push(...nextLevelUsers);
+      }
+      currentIds = nextLevelUsers.map((u) => u.id);
+    }
+
+    setFilteredReferrals(levelReferrals);
+    setPage(1);
+  };
+
+  const totalPages = Math.ceil(filteredReferrals.length / PAGE_SIZE);
+  const paginatedReferrals = filteredReferrals.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const copyLink = () => {
     navigator.clipboard.writeText(referralLink);
@@ -110,28 +153,72 @@ export default function ReferralPage() {
         </Card>
       </div>
 
-      {/* Referral List */}
+      {/* Level Filter */}
       <Card title="Your Referrals">
-        {referrals.length === 0 ? (
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-sm text-zinc-400">Filter by level:</span>
+          {[0, 1, 2, 3, 4, 5].map((level) => (
+            <button
+              key={level}
+              onClick={() => setSelectedLevel(level)}
+              className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                selectedLevel === level
+                  ? "bg-blue-600 text-white"
+                  : "bg-zinc-800 text-zinc-400 hover:text-white"
+              }`}
+            >
+              {level === 0 ? "All" : `L${level}`}
+            </button>
+          ))}
+        </div>
+
+        {filteredReferrals.length === 0 ? (
           <div className="text-center py-8">
             <Icon name="users" size={32} className="text-zinc-600 mx-auto mb-2" />
-            <p className="text-zinc-400 text-sm">No referrals yet. Share your link!</p>
+            <p className="text-zinc-400 text-sm">No referrals at this level. Share your link!</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {referrals.map((ref) => (
-              <div key={ref.id} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <span className={`w-2 h-2 rounded-full ${ref.is_active ? "bg-green-400" : "bg-zinc-500"}`} />
-                  <div>
-                    <p className="text-sm text-white">{ref.name || ref.email}</p>
-                    <p className="text-xs text-zinc-500">Joined {new Date(ref.created_at).toLocaleDateString()}</p>
+          <>
+            <div className="space-y-2">
+              {paginatedReferrals.map((ref) => (
+                <div key={ref.id} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <span className={`w-2 h-2 rounded-full ${ref.is_active ? "bg-green-400" : "bg-zinc-500"}`} />
+                    <div>
+                      <p className="text-sm text-white">{ref.name || ref.email}</p>
+                      <p className="text-xs text-zinc-500">Joined {new Date(ref.created_at).toLocaleDateString()}</p>
+                    </div>
                   </div>
+                  <span className="px-2 py-1 bg-zinc-800 rounded text-xs text-zinc-400 capitalize">{ref.rank}</span>
                 </div>
-                <span className="px-2 py-1 bg-zinc-800 rounded text-xs text-zinc-400 capitalize">{ref.rank}</span>
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-zinc-800">
+                <p className="text-xs text-zinc-500">
+                  Showing {(page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, filteredReferrals.length)} of {filteredReferrals.length}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="px-3 py-1 bg-zinc-800 rounded text-xs text-zinc-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Prev
+                  </button>
+                  <span className="px-3 py-1 text-xs text-zinc-400">{page}/{totalPages}</span>
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    className="px-3 py-1 bg-zinc-800 rounded text-xs text-zinc-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </Card>
     </div>

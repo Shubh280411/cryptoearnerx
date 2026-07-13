@@ -226,13 +226,21 @@ function RegisterForm() {
 
       await supabase.from("transactions").insert({
         user_id: authData.user.id,
-        type: "referral_bonus",
+        type: "registration_bonus",
         amount: bonusAmount,
         balance_before: 0,
         balance_after: bonusAmount,
-        description: `Welcome bonus! ${bonusAmount} CEX coins credited on signup`,
+        description: `Registration Bonus! ${bonusAmount} CEX coins credited on signup`,
         status: "completed",
       });
+
+      if (sponsorId) {
+        await fetch("/api/register-bonus", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: authData.user.id }),
+        });
+      }
 
       if (sponsorId) {
         const { data: sponsorUser } = await supabase

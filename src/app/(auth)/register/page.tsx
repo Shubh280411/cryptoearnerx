@@ -47,8 +47,13 @@ function RegisterForm() {
 
   const validateReferral = async (code: string) => {
     if (!code.trim()) { setReferralValid(null); setReferralName(""); return; }
-    const { data } = await supabase.from("users").select("id, name").eq("referral_code", code.trim()).single();
-    if (data) { setReferralValid(true); setReferralName(data.name || "User"); }
+    const res = await fetch("/api/validate-referral", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: code.trim() }),
+    });
+    const result = await res.json();
+    if (result.valid) { setReferralValid(true); setReferralName(result.name || "User"); }
     else { setReferralValid(false); setReferralName(""); }
   };
 
@@ -143,17 +148,20 @@ function RegisterForm() {
       return;
     }
 
-    const { data: sponsorCheck } = await supabase
-      .from("users")
-      .select("id, left_child_id, right_child_id")
-      .eq("referral_code", referralCode.trim())
-      .single();
+    const sponsorRes = await fetch("/api/validate-referral", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: referralCode.trim(), full: true }),
+    });
+    const sponsorResult = await sponsorRes.json();
 
-    if (!sponsorCheck) {
+    if (!sponsorResult.valid) {
       setError("Invalid referral code. Please check and try again.");
       setLoading(false);
       return;
     }
+
+    const sponsorCheck = sponsorResult.sponsor;
 
     const newReferralCode = generateReferralCode();
 

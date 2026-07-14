@@ -109,27 +109,6 @@ export async function GET(req: NextRequest) {
   try {
     const { user } = await requireAuth();
 
-    const { data: existing } = await supabaseAdmin
-      .from("crypto_wallets")
-      .select("address, derivation_index")
-      .eq("user_id", user.id)
-      .eq("network", "polygon")
-      .single();
-
-    if (existing) {
-      let balance = 0;
-      try {
-        balance = await getChildBalance(existing.address);
-      } catch (e) {
-        // RPC might fail
-      }
-      return NextResponse.json({
-        address: existing.address,
-        balance,
-        derivation_index: existing.derivation_index,
-      });
-    }
-
     const { data: existingWallets } = await supabaseAdmin
       .from("crypto_wallets")
       .select("derivation_index")

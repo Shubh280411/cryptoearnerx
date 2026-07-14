@@ -42,42 +42,23 @@ export default function WithdrawPage() {
     setError("");
     setSuccess("");
 
-    const withdrawAmount = Number(amount);
-    if (withdrawAmount < 25) {
-      setError("Minimum withdrawal is 25 POL");
-      setSubmitting(false);
-      return;
-    }
-
-    if (withdrawAmount > balance) {
-      setError("Insufficient balance");
-      setSubmitting(false);
-      return;
-    }
-
-    if (!walletAddress.startsWith("0x") || walletAddress.length !== 42) {
-      setError("Invalid wallet address");
-      setSubmitting(false);
-      return;
-    }
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { error: wdError } = await supabase.from("withdrawals").insert({
-      user_id: user.id,
-      amount: withdrawAmount,
-      wallet_address: walletAddress,
-      status: "pending",
-    });
-
-    if (wdError) {
-      setError("Failed to submit withdrawal request");
-    } else {
-      setSuccess("Withdrawal request submitted! It will be processed within 24 hours.");
-      setAmount("");
-      setWalletAddress("");
-      loadWithdrawInfo();
+    try {
+      const res = await fetch("/api/wallet/withdraw", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: Number(amount), walletAddress }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSuccess(data.message);
+        setAmount("");
+        setWalletAddress("");
+        loadWithdrawInfo();
+      } else {
+        setError(data.error || "Failed to submit withdrawal");
+      }
+    } catch {
+      setError("Network error");
     }
 
     setSubmitting(false);

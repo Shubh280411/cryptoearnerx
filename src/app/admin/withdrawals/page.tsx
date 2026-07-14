@@ -22,12 +22,28 @@ export default function AdminWithdrawalsPage() {
   };
 
   const handleApprove = async (id: string) => {
-    await supabase.from("withdrawals").update({ status: "completed" }).eq("id", id);
+    const res = await fetch("/api/admin/withdraw", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ withdrawalId: id, action: "approve" }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert(`Approved! Send ${data.amount} POL to:\n${data.walletAddress}`);
+    }
     loadWithdrawals();
   };
 
   const handleReject = async (id: string) => {
-    await supabase.from("withdrawals").update({ status: "rejected" }).eq("id", id);
+    const res = await fetch("/api/admin/withdraw", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ withdrawalId: id, action: "reject" }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert("Rejected! Funds returned to user.");
+    }
     loadWithdrawals();
   };
 

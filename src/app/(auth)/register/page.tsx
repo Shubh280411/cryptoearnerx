@@ -242,26 +242,6 @@ function RegisterForm() {
         });
       }
 
-      if (sponsorId) {
-        const { data: sponsorUser } = await supabase
-          .from("users")
-          .select("left_child_id, right_child_id")
-          .eq("id", sponsorId)
-          .single();
-
-        if (sponsorUser) {
-          const updateData: Record<string, string> = {};
-          if (!sponsorUser.left_child_id) {
-            updateData.left_child_id = authData.user.id;
-          } else if (!sponsorUser.right_child_id) {
-            updateData.right_child_id = authData.user.id;
-          }
-          if (Object.keys(updateData).length > 0) {
-            await supabase.from("users").update(updateData).eq("id", sponsorId);
-          }
-        }
-      }
-
       router.push("/login");
     }
   };

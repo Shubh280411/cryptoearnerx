@@ -20,6 +20,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, message: "No sponsor" });
     }
 
+    // Update sponsor's binary tree (left_child_id / right_child_id)
+    const { data: sponsorData } = await supabaseAdmin
+      .from("users")
+      .select("left_child_id, right_child_id")
+      .eq("id", newUser.sponsor_id)
+      .single();
+
+    if (sponsorData) {
+      const updateData: Record<string, string> = {};
+      if (!sponsorData.left_child_id) {
+        updateData.left_child_id = userId;
+      } else if (!sponsorData.right_child_id) {
+        updateData.right_child_id = userId;
+      }
+      if (Object.keys(updateData).length > 0) {
+        await supabaseAdmin.from("users").update(updateData).eq("id", newUser.sponsor_id);
+      }
+    }
+
+    // 5-level CEX bonus
     const credited: { level: number; userId: string; amount: number }[] = [];
     let currentId = newUser.sponsor_id;
 

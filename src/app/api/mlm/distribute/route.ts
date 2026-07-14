@@ -82,6 +82,37 @@ export async function POST(req: NextRequest) {
       p_right_add: amount / 2,
     });
 
+    // Propagate volume UP the sponsor tree
+    let propagateId: string | null = investor.sponsor_id;
+    let currentInvestorId: string = investorId;
+
+    while (propagateId) {
+      const { data: parent } = await supabaseAdmin
+        .from("users")
+        .select("left_child_id, right_child_id, sponsor_id")
+        .eq("id", propagateId)
+        .single();
+
+      if (!parent) break;
+
+      if (parent.left_child_id === currentInvestorId) {
+        await supabaseAdmin.rpc("increment_binary_volume", {
+          p_user_id: propagateId,
+          p_left_add: amount,
+          p_right_add: 0,
+        });
+      } else if (parent.right_child_id === currentInvestorId) {
+        await supabaseAdmin.rpc("increment_binary_volume", {
+          p_user_id: propagateId,
+          p_left_add: 0,
+          p_right_add: amount,
+        });
+      }
+
+      currentInvestorId = propagateId;
+      propagateId = parent.sponsor_id;
+    }
+
     const { data: sponsor } = await supabaseAdmin
       .from("users")
       .select("left_volume, right_volume, sponsor_id")

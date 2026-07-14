@@ -38,6 +38,10 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
+      if (investment.roi_enabled === false) {
+        continue;
+      }
+
       const dailyROI = investment.amount * (investment.daily_roi / 100);
       const isCex = investment.investment_source === "cex";
       const rpcFn = isCex ? "credit_bonus" : "credit_wallet";

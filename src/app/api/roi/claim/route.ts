@@ -57,6 +57,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (investment.roi_enabled === false) {
+      return NextResponse.json(
+        { error: "ROI is disabled for this investment by admin" },
+        { status: 400 }
+      );
+    }
+
     const dailyROI = investment.amount * (investment.daily_roi / 100);
 
     // Atomic wallet update

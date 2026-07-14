@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icons";
 import { formatPOL } from "@/lib/utils";
 import { PACKAGES } from "@/lib/constants";
@@ -20,10 +19,26 @@ export default function AdminUsersPage() {
   const [banReason, setBanReason] = useState("");
   const [appealNote, setAppealNote] = useState("");
   const [detailUser, setDetailUser] = useState<any>(null);
-  const [activateModal, setActivateModal] = useState<{ userId: string; userName: string } | null>(null);
-  const [activatePkg, setActivatePkg] = useState("starter");
-  const [activateAmount, setActivateAmount] = useState("");
-  const [activating, setActivating] = useState(false);
+
+  // Wallet modal
+  const [walletModal, setWalletModal] = useState<{ userId: string; userName: string; currentBalance: number } | null>(null);
+  const [walletAction, setWalletAction] = useState<"add" | "deduct">("add");
+  const [walletAmount, setWalletAmount] = useState("");
+  const [walletLoading, setWalletLoading] = useState(false);
+
+  // CEX modal
+  const [cexModal, setCexModal] = useState<{ userId: string; userName: string; currentCex: number } | null>(null);
+  const [cexAction, setCexAction] = useState<"add" | "deduct">("add");
+  const [cexAmount, setCexAmount] = useState("");
+  const [cexLoading, setCexLoading] = useState(false);
+
+  // Package modal
+  const [pkgModal, setPkgModal] = useState<{ userId: string; userName: string } | null>(null);
+  const [pkgType, setPkgType] = useState("starter");
+  const [pkgAmount, setPkgAmount] = useState("");
+  const [pkgRoi, setPkgRoi] = useState(true);
+  const [pkgDeduct, setPkgDeduct] = useState(true);
+  const [pkgLoading, setPkgLoading] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -69,11 +84,6 @@ export default function AdminUsersPage() {
     loadData();
   };
 
-  const toggleAdmin = async (userId: string, currentAdmin: boolean) => {
-    await supabase.from("users").update({ is_admin: !currentAdmin }).eq("id", userId);
-    loadData();
-  };
-
   const reviewAppeal = async (appealId: string, status: "approved" | "rejected") => {
     const appeal = appeals.find((a) => a.id === appealId);
     if (!appeal) return;
@@ -84,32 +94,54 @@ export default function AdminUsersPage() {
     setAppealNote(""); loadData();
   };
 
-  const activatePackage = async () => {
-    if (!activateModal || !activateAmount) return;
-    setActivating(true);
-    const amount = parseFloat(activateAmount);
-    const pkg = PACKAGES.find((p) => p.type === activatePkg);
-    if (!pkg || amount < pkg.minInvest || amount > pkg.maxInvest) {
-      setActivating(false);
-      return;
-    }
-
-    const res = await fetch("/api/wallet/deposit", {
+  const updateWallet = async () => {
+    if (!walletModal || !walletAmount) return;
+    setWalletLoading(true);
+    const res = await fetch("/api/admin/update-wallet", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: activateModal.userId, amount, packageType: activatePkg }),
+      body: JSON.stringify({ userId: walletModal.userId, type: "pol", action: walletAction, amount: parseFloat(walletAmount) }),
     });
     const data = await res.json();
-
     if (data.success) {
-      await fetch("/api/mlm/distribute", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ investorId: activateModal.userId, amount }),
-      });
+      setWalletModal(null); setWalletAmount(""); loadData();
     }
+    setWalletLoading(false);
+  };
 
-    setActivateModal(null); setActivateAmount(""); setActivating(false); loadData();
+  const updateCex = async () => {
+    if (!cexModal || !cexAmount) return;
+    setCexLoading(true);
+    const res = await fetch("/api/admin/update-wallet", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: cexModal.userId, type: "cex", action: cexAction, amount: parseFloat(cexAmount) }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      setCexModal(null); setCexAmount(""); loadData();
+    }
+    setCexLoading(false);
+  };
+
+  const activatePackage = async () => {
+    if (!pkgModal || !pkgAmount) return;
+    setPkgLoading(true);
+    const res = await fetch("/api/admin/activate-package", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: pkgModal.userId, packageType: pkgType, amount: parseFloat(pkgAmount), roiEnabled: pkgRoi, deductBalance: pkgDeduct }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      setPkgModal(null); setPkgAmount(""); loadData();
+    }
+    setPkgLoading(false);
+  };
+
+  const toggleRoi = async (investmentId: string, current: boolean) => {
+    await supabase.from("investments").update({ roi_enabled: !current }).eq("id", investmentId);
+    loadData();
   };
 
   const filtered = users.filter((u) =>
@@ -182,11 +214,14 @@ export default function AdminUsersPage() {
                             <p className="text-xs text-zinc-500">{user.email}</p>
                           </div>
                         </td>
-                        <td className="p-3 text-zinc-300">{formatPOL(w?.balance || 0)} POL</td>
+                        <td className="p-3 text-green-400">{formatPOL(w?.balance || 0)} POL</td>
                         <td className="p-3 text-purple-400">{(w?.bonus_balance || 0).toLocaleString()}</td>
                         <td className="p-3">
                           {pkg ? (
-                            <span className="px-2 py-1 rounded-full text-xs bg-green-500/10 text-green-400 capitalize">{pkg.package_type}</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="px-2 py-1 rounded-full text-xs bg-green-500/10 text-green-400 capitalize">{pkg.package_type}</span>
+                              {pkg.roi_enabled === false && <span className="px-2 py-1 rounded-full text-xs bg-red-500/10 text-red-400">ROI OFF</span>}
+                            </div>
                           ) : (
                             <span className="px-2 py-1 rounded-full text-xs bg-zinc-700 text-zinc-400">None</span>
                           )}
@@ -200,9 +235,11 @@ export default function AdminUsersPage() {
                           )}
                         </td>
                         <td className="p-3 text-right">
-                          <div className="flex items-center justify-end gap-1">
+                          <div className="flex items-center justify-end gap-1 flex-wrap">
                             <button onClick={() => setDetailUser(user)} className="px-2 py-1.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg text-xs transition-colors">View</button>
-                            <button onClick={() => setActivateModal({ userId: user.id, userName: user.name || user.email })} className="px-2 py-1.5 bg-green-500/10 text-green-400 hover:bg-green-500/20 rounded-lg text-xs transition-colors">Activate</button>
+                            <button onClick={() => setWalletModal({ userId: user.id, userName: user.name || user.email, currentBalance: parseFloat(w?.balance || 0) })} className="px-2 py-1.5 bg-green-500/10 text-green-400 hover:bg-green-500/20 rounded-lg text-xs transition-colors">Wallet</button>
+                            <button onClick={() => setCexModal({ userId: user.id, userName: user.name || user.email, currentCex: parseFloat(w?.bonus_balance || 0) })} className="px-2 py-1.5 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 rounded-lg text-xs transition-colors">CEX</button>
+                            <button onClick={() => setPkgModal({ userId: user.id, userName: user.name || user.email })} className="px-2 py-1.5 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 rounded-lg text-xs transition-colors">Package</button>
                             {user.is_banned ? (
                               <button onClick={() => unbanUser(user.id)} className="px-2 py-1.5 bg-green-500/10 text-green-400 hover:bg-green-500/20 rounded-lg text-xs transition-colors">Unban</button>
                             ) : (
@@ -311,13 +348,22 @@ export default function AdminUsersPage() {
                 <p className="text-sm text-white">{new Date(detailUser.created_at).toLocaleString()}</p>
               </div>
               <div className="bg-zinc-800/50 rounded-lg p-3">
-                <p className="text-xs text-zinc-500 mb-2">Active Package</p>
+                <p className="text-xs text-zinc-500 mb-2">Active Packages</p>
                 {investments[detailUser.id]?.length > 0 ? (
                   <div className="space-y-2">
                     {investments[detailUser.id].map((inv) => (
-                      <div key={inv.id} className="flex items-center justify-between">
-                        <span className="text-sm text-white capitalize">{inv.package_type}</span>
-                        <span className="text-sm text-green-400">{formatPOL(inv.amount)} POL</span>
+                      <div key={inv.id} className="flex items-center justify-between bg-zinc-900 rounded-lg p-2.5">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-white capitalize font-medium">{inv.package_type}</span>
+                            <span className="text-xs text-zinc-400">{formatPOL(inv.amount)} POL</span>
+                            {inv.roi_enabled === false && <span className="text-xs text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded">ROI OFF</span>}
+                          </div>
+                          <p className="text-xs text-zinc-500 mt-0.5">Daily: {inv.daily_roi}% &middot; Ends: {new Date(inv.end_date).toLocaleDateString()}</p>
+                        </div>
+                        <button onClick={() => toggleRoi(inv.id, inv.roi_enabled !== false)} className={`px-2 py-1 rounded text-xs font-medium transition-colors ${inv.roi_enabled === false ? "bg-red-500/20 text-red-400 hover:bg-red-500/30" : "bg-green-500/20 text-green-400 hover:bg-green-500/30"}`}>
+                          {inv.roi_enabled === false ? "Enable ROI" : "Disable ROI"}
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -336,16 +382,76 @@ export default function AdminUsersPage() {
         </div>
       )}
 
+      {/* Wallet Balance Modal */}
+      {walletModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => { setWalletModal(null); setWalletAmount(""); }}>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-white mb-1">Update Wallet Balance</h3>
+            <p className="text-sm text-zinc-400 mb-4">For <span className="text-white">{walletModal.userName}</span> &middot; Current: <span className="text-green-400">{formatPOL(walletModal.currentBalance)} POL</span></p>
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <button onClick={() => setWalletAction("add")} className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${walletAction === "add" ? "bg-green-600/20 text-green-400 border border-green-600/30" : "bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-700"}`}>
+                  Add POL
+                </button>
+                <button onClick={() => setWalletAction("deduct")} className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${walletAction === "deduct" ? "bg-red-600/20 text-red-400 border border-red-600/30" : "bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-700"}`}>
+                  Deduct POL
+                </button>
+              </div>
+              <div>
+                <label className="text-xs text-zinc-500 mb-1 block">Amount (POL)</label>
+                <input type="number" step="0.0001" value={walletAmount} onChange={(e) => setWalletAmount(e.target.value)} placeholder="0.00" className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end mt-4">
+              <button onClick={() => { setWalletModal(null); setWalletAmount(""); }} className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm">Cancel</button>
+              <button onClick={updateWallet} disabled={walletLoading || !walletAmount} className={`px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${walletAction === "add" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}`}>
+                {walletLoading ? "Processing..." : walletAction === "add" ? "Add" : "Deduct"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CEX Balance Modal */}
+      {cexModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => { setCexModal(null); setCexAmount(""); }}>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-white mb-1">Update CEX Balance</h3>
+            <p className="text-sm text-zinc-400 mb-4">For <span className="text-white">{cexModal.userName}</span> &middot; Current: <span className="text-purple-400">{cexModal.currentCex.toLocaleString()} CEX</span></p>
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <button onClick={() => setCexAction("add")} className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${cexAction === "add" ? "bg-green-600/20 text-green-400 border border-green-600/30" : "bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-700"}`}>
+                  Add CEX
+                </button>
+                <button onClick={() => setCexAction("deduct")} className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${cexAction === "deduct" ? "bg-red-600/20 text-red-400 border border-red-600/30" : "bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-700"}`}>
+                  Deduct CEX
+                </button>
+              </div>
+              <div>
+                <label className="text-xs text-zinc-500 mb-1 block">Amount (CEX)</label>
+                <input type="number" value={cexAmount} onChange={(e) => setCexAmount(e.target.value)} placeholder="0" className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end mt-4">
+              <button onClick={() => { setCexModal(null); setCexAmount(""); }} className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm">Cancel</button>
+              <button onClick={updateCex} disabled={cexLoading || !cexAmount} className={`px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${cexAction === "add" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}`}>
+                {cexLoading ? "Processing..." : cexAction === "add" ? "Add" : "Deduct"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Activate Package Modal */}
-      {activateModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => { setActivateModal(null); setActivateAmount(""); }}>
+      {pkgModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => { setPkgModal(null); setPkgAmount(""); }}>
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-white mb-1">Activate Package</h3>
-            <p className="text-sm text-zinc-400 mb-4">For <span className="text-white">{activateModal.userName}</span></p>
+            <p className="text-sm text-zinc-400 mb-4">For <span className="text-white">{pkgModal.userName}</span></p>
             <div className="space-y-3">
               <div>
                 <label className="text-xs text-zinc-500 mb-1 block">Package</label>
-                <select value={activatePkg} onChange={(e) => setActivatePkg(e.target.value)} className="w-full appearance-none bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                <select value={pkgType} onChange={(e) => setPkgType(e.target.value)} className="w-full appearance-none bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
                   {PACKAGES.map((p) => (
                     <option key={p.type} value={p.type}>{p.name} ({p.minInvest}-{p.maxInvest.toLocaleString()} POL, {p.dailyROI}% daily)</option>
                   ))}
@@ -353,13 +459,31 @@ export default function AdminUsersPage() {
               </div>
               <div>
                 <label className="text-xs text-zinc-500 mb-1 block">Amount (POL)</label>
-                <input type="number" value={activateAmount} onChange={(e) => setActivateAmount(e.target.value)} placeholder={`Min ${PACKAGES.find((p) => p.type === activatePkg)?.minInvest}`} className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input type="number" step="0.01" value={pkgAmount} onChange={(e) => setPkgAmount(e.target.value)} placeholder={`Min ${PACKAGES.find((p) => p.type === pkgType)?.minInvest}`} className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div className="flex items-center justify-between bg-zinc-800/50 rounded-lg p-3">
+                <div>
+                  <p className="text-sm text-white font-medium">Daily ROI</p>
+                  <p className="text-xs text-zinc-500">{pkgRoi ? "ROI will be paid daily" : "ROI will NOT be paid"}</p>
+                </div>
+                <button onClick={() => setPkgRoi(!pkgRoi)} className={`relative w-12 h-6 rounded-full transition-colors ${pkgRoi ? "bg-green-600" : "bg-zinc-700"}`}>
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${pkgRoi ? "translate-x-6" : ""}`} />
+                </button>
+              </div>
+              <div className="flex items-center justify-between bg-zinc-800/50 rounded-lg p-3">
+                <div>
+                  <p className="text-sm text-white font-medium">Deduct from Wallet</p>
+                  <p className="text-xs text-zinc-500">{pkgDeduct ? "Deduct amount from user's POL balance" : "Activate for free (no deduction)"}</p>
+                </div>
+                <button onClick={() => setPkgDeduct(!pkgDeduct)} className={`relative w-12 h-6 rounded-full transition-colors ${pkgDeduct ? "bg-blue-600" : "bg-zinc-700"}`}>
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${pkgDeduct ? "translate-x-6" : ""}`} />
+                </button>
               </div>
             </div>
             <div className="flex gap-2 justify-end mt-4">
-              <button onClick={() => { setActivateModal(null); setActivateAmount(""); }} className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm">Cancel</button>
-              <button onClick={activatePackage} disabled={activating || !activateAmount} className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium">
-                {activating ? "Activating..." : "Activate"}
+              <button onClick={() => { setPkgModal(null); setPkgAmount(""); }} className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm">Cancel</button>
+              <button onClick={activatePackage} disabled={pkgLoading || !pkgAmount} className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium">
+                {pkgLoading ? "Activating..." : "Activate"}
               </button>
             </div>
           </div>

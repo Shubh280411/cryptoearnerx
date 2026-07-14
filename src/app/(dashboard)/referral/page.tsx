@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,65 +9,21 @@ import { formatPOL } from "@/lib/utils";
 
 const PAGE_SIZE = 10;
 
-async function getTeamAtLevel(userId: string, level: number): Promise<any[]> {
-  let currentIds = [userId];
-  for (let l = 1; l <= level; l++) {
-    const { data } = await supabase
-      .from("users")
-      .select("id")
-      .in("sponsor_id", currentIds);
-    if (!data || data.length === 0) return [];
-    if (l === level) return data;
-    currentIds = data.map((u) => u.id);
-  }
-  return [];
-}
-
-async function getTeamCounts(userId: string) {
-  const counts: Record<number, { members: any[]; count: number }> = {};
-  let currentIds = [userId];
-
-  for (let level = 1; level <= 5; level++) {
-    const { data } = await supabase
-      .from("users")
-      .select("id, name, email, rank, is_active, created_at")
-      .in("sponsor_id", currentIds);
-
-    const members = data || [];
-    counts[level] = { members, count: members.length };
-    currentIds = members.map((u) => u.id);
-    if (currentIds.length === 0) {
-      for (let remaining = level + 1; remaining <= 5; remaining++) {
-        counts[remaining] = { members: [], count: 0 };
-      }
-      break;
-    }
-  }
-
-  return counts;
-}
-
 export default function ReferralPage() {
   const [userId, setUserId] = useState("");
   const [referralCode, setReferralCode] = useState("");
   const [referralLink, setReferralLink] = useState("");
   const [stats, setStats] = useState({ totalReferrals: 0, activeReferrals: 0, totalEarned: 0 });
   const [selectedLevel, setSelectedLevel] = useState(1);
-  const [filteredReferrals, setFilteredReferrals] = useState<any[]>([]);
   const [teamCounts, setTeamCounts] = useState<Record<number, { members: any[]; count: number }>>({});
   const [totalTeam, setTotalTeam] = useState(0);
   const [page, setPage] = useState(1);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [teamLoading, setTeamLoading] = useState(true);
 
   useEffect(() => {
     loadData();
   }, []);
-
-  useEffect(() => {
-    if (userId) loadLevel(selectedLevel);
-  }, [selectedLevel, userId]);
 
   const loadData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -80,46 +36,23 @@ export default function ReferralPage() {
       setReferralLink(`${window.location.origin}/register?ref=${userData.referral_code}`);
     }
 
-    const [earnRes] = await Promise.all([
-      supabase.from("transactions").select("amount").eq("user_id", user.id).eq("type", "referral_bonus"),
-    ]);
-
-    setStats({
-      totalReferrals: 0,
-      activeReferrals: 0,
-      totalEarned: (earnRes.data || []).reduce((s, t) => s + t.amount, 0),
+    const res = await fetch("/api/team-referrals", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: user.id }),
     });
+    const data = await res.json();
 
-    const counts = await getTeamCounts(user.id);
-    setTeamCounts(counts);
-
-    let total = 0;
-    Object.values(counts).forEach((c) => { total += c.count; });
-    setTotalTeam(total);
-
-    const l1Members = counts[1]?.members || [];
-    setStats({
-      totalReferrals: l1Members.length,
-      activeReferrals: l1Members.filter((r: any) => r.is_active).length,
-      totalEarned: (earnRes.data || []).reduce((s, t) => s + t.amount, 0),
-    });
-
-    setFilteredReferrals(l1Members.slice(0, PAGE_SIZE));
-    setLoading(false);
-    setTeamLoading(false);
-  };
-
-  const loadLevel = async (level: number) => {
-    setTeamLoading(true);
-    if (teamCounts[level]) {
-      const members = teamCounts[level].members || [];
-      setFilteredReferrals(members.slice(0, PAGE_SIZE));
-      setPage(1);
-    } else {
-      setFilteredReferrals([]);
-      setPage(1);
+    if (data.success) {
+      setTeamCounts(data.teamCounts);
+      setTotalTeam(data.totalTeam);
+      setStats({
+        totalReferrals: data.totalReferrals,
+        activeReferrals: data.activeReferrals,
+        totalEarned: data.totalEarned,
+      });
     }
-    setTeamLoading(false);
+    setLoading(false);
   };
 
   const currentMembers = teamCounts[selectedLevel]?.members || [];
@@ -199,7 +132,7 @@ export default function ReferralPage() {
           <div className="relative flex-1">
             <select
               value={selectedLevel}
-              onChange={(e) => setSelectedLevel(Number(e.target.value))}
+              onChange={(e) => { setSelectedLevel(Number(e.target.value)); setPage(1); }}
               className="w-full appearance-none bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             >
               <option value={1}>Level 1 - Direct Referrals ({teamCounts[1]?.count || 0})</option>
@@ -218,12 +151,7 @@ export default function ReferralPage() {
           Showing {currentMembers.length} members at Level {selectedLevel}
         </p>
 
-        {teamLoading ? (
-          <div className="text-center py-8">
-            <Icon name="refresh" size={20} className="text-zinc-600 mx-auto mb-2 animate-spin" />
-            <p className="text-zinc-400 text-sm">Loading...</p>
-          </div>
-        ) : currentMembers.length === 0 ? (
+        {currentMembers.length === 0 ? (
           <div className="text-center py-8">
             <Icon name="users" size={32} className="text-zinc-600 mx-auto mb-2" />
             <p className="text-zinc-400 text-sm">No members at this level yet. Share your link!</p>

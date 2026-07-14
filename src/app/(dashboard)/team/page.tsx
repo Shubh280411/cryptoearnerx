@@ -6,37 +6,11 @@ import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icons";
 import { formatPOL } from "@/lib/utils";
 
-async function getSubtree(userId: string, side: "left" | "right"): Promise<any[]> {
-  const { data: root } = await supabase.from("users").select("left_child_id, right_child_id").eq("id", userId).single();
-  const childId = side === "left" ? root?.left_child_id : root?.right_child_id;
-  if (!childId) return [];
-
-  const result: any[] = [];
-  const queue = [childId];
-
-  while (queue.length > 0) {
-    const currentId = queue.shift()!;
-    const { data: member } = await supabase
-      .from("users")
-      .select("id, name, email, rank, is_active, left_child_id, right_child_id, left_volume, right_volume, created_at")
-      .eq("id", currentId)
-      .single();
-
-    if (member) {
-      result.push(member);
-      if (member.left_child_id) queue.push(member.left_child_id);
-      if (member.right_child_id) queue.push(member.right_child_id);
-    }
-  }
-
-  return result;
-}
-
 export default function MlmPage() {
   const [user, setUser] = useState<any>(null);
   const [leftTeam, setLeftTeam] = useState<any[]>([]);
   const [rightTeam, setRightTeam] = useState<any[]>([]);
-  const [stats, setStats] = useState({ leftCount: 0, rightCount: 0, totalEarnings: 0, matches: 0 });
+  const [stats, setStats] = useState({ leftCount: 0, rightCount: 0, leftVolume: 0, rightVolume: 0, totalEarnings: 0, matches: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -50,22 +24,25 @@ export default function MlmPage() {
     const { data: userData } = await supabase.from("users").select("*").eq("id", authUser.id).single();
     setUser(userData);
 
-    const [leftMembers, rightMembers, earningRes] = await Promise.all([
-      getSubtree(authUser.id, "left"),
-      getSubtree(authUser.id, "right"),
-      supabase.from("transactions").select("amount, type").eq("user_id", authUser.id).in("type", ["referral_bonus", "binary_bonus", "leadership_bonus"]),
-    ]);
-
-    const earnData = earningRes.data || [];
-
-    setLeftTeam(leftMembers);
-    setRightTeam(rightMembers);
-    setStats({
-      leftCount: leftMembers.length,
-      rightCount: rightMembers.length,
-      totalEarnings: earnData.reduce((s: number, t: any) => s + (t.amount > 0 ? t.amount : 0), 0),
-      matches: earnData.filter((t: any) => t.type === "binary_bonus").length,
+    const res = await fetch("/api/team-tree", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: authUser.id }),
     });
+    const data = await res.json();
+
+    if (data.success) {
+      setLeftTeam(data.leftTeam);
+      setRightTeam(data.rightTeam);
+      setStats({
+        leftCount: data.leftTeam.length,
+        rightCount: data.rightTeam.length,
+        leftVolume: data.leftVolume,
+        rightVolume: data.rightVolume,
+        totalEarnings: data.totalEarnings,
+        matches: data.matches,
+      });
+    }
     setLoading(false);
   };
 
@@ -102,7 +79,7 @@ export default function MlmPage() {
         <Card>
           <p className="text-xs text-zinc-500">Total Volume</p>
           <p className="text-xl font-bold text-white mt-1">
-            {formatPOL(user?.left_volume || 0)} / {formatPOL(user?.right_volume || 0)}
+            {formatPOL(stats.leftVolume)} / {formatPOL(stats.rightVolume)}
           </p>
           <p className="text-xs text-zinc-500">L / R POL</p>
         </Card>
@@ -124,7 +101,6 @@ export default function MlmPage() {
           </div>
         </div>
 
-        {/* Connector lines */}
         <div className="flex justify-center mb-4">
           <div className="w-px h-8 bg-zinc-700" />
         </div>

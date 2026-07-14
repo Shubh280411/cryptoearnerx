@@ -62,14 +62,13 @@ export async function POST(req: NextRequest) {
     }
 
     if (rpcError || !rpcResult?.success) {
-      const fallbackDesc = `Sweep from ${walletAddress} to ${masterWallet.address}. Tx: ${txHash}. Amount: ${amount} POL (credit failed - manual credit needed)`;
       await supabaseAdmin.from("transactions").insert({
         user_id: user.id,
-        type: "sweep",
+        type: "deposit",
         amount: amount,
         balance_before: 0,
         balance_after: 0,
-        description: fallbackDesc,
+        description: "Deposit",
         tx_hash: txHash,
         status: "completed",
       });
@@ -90,7 +89,7 @@ export async function POST(req: NextRequest) {
       amount,
       balance_before: rpcResult.previous_balance,
       balance_after: rpcResult.new_balance,
-      description: `Auto-sweep deposit. Tx: ${txHash}`,
+      description: "Deposit",
       tx_hash: txHash,
       status: "completed",
     });

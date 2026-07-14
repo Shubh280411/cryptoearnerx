@@ -43,7 +43,7 @@ export default function WalletPage() {
   };
 
   const isCECTx = (type: string) => {
-    return ["registration_bonus", "referral_bonus", "level_commission", "cex_unlock", "invest_locked_cec"].includes(type);
+    return ["registration_bonus", "invest_locked_cec", "cex_unlock"].includes(type);
   };
 
   if (loading) {

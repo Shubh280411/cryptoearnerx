@@ -7,18 +7,23 @@ export async function POST(req: NextRequest) {
   try {
     await requireAdmin();
 
-    const { userId, packageType, amount, roiEnabled, deductBalance } = await req.json();
+    const body = await req.json();
+    const userId = body.userId;
+    const packageType = body.packageType;
+    const amount = body.amount;
+    const roiEnabled = body.roiEnabled;
+    const deductBalance = body.deductBalance;
 
-    if (!userId || !packageType || !amount) {
-      return NextResponse.json({ error: "Missing fields: userId, packageType, amount" }, { status: 400 });
+    if (!userId || !packageType || amount === undefined || amount === null) {
+      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
     const pkg = PACKAGES.find((p) => p.type === packageType);
     if (!pkg) {
-      return NextResponse.json({ error: "Invalid package type" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid package type: " + packageType }, { status: 400 });
     }
 
-    const numAmount = parseFloat(amount);
+    const numAmount = parseFloat(String(amount));
     if (isNaN(numAmount) || numAmount < pkg.minInvest || numAmount > pkg.maxInvest) {
       return NextResponse.json({ error: `Amount must be between ${pkg.minInvest} and ${pkg.maxInvest.toLocaleString()} POL` }, { status: 400 });
     }
@@ -36,7 +41,7 @@ export async function POST(req: NextRequest) {
         .eq("user_id", userId)
         .single();
 
-      balanceBefore = parseFloat(wallet?.balance || 0);
+      balanceBefore = parseFloat(wallet?.balance || "0");
 
       if (balanceBefore < numAmount) {
         return NextResponse.json({ error: "Insufficient POL balance" }, { status: 400 });
@@ -54,7 +59,7 @@ export async function POST(req: NextRequest) {
       balanceAfter = rpcResult.remaining_balance;
     }
 
-    const { error: invError } = await supabaseAdmin.from("investments").insert({
+    const insertData: any = {
       user_id: userId,
       package_type: packageType,
       amount: numAmount,
@@ -65,30 +70,34 @@ export async function POST(req: NextRequest) {
       end_date: endDate.toISOString(),
       total_earned: 0,
       status: "active",
-      roi_enabled: roiEnabled !== false,
-    });
+    };
+
+    const { error: invError } = await supabaseAdmin.from("investments").insert(insertData);
 
     if (invError) {
-      return NextResponse.json({ error: "Failed to create investment" }, { status: 500 });
+      console.error("Investment insert error:", invError);
+      return NextResponse.json({ error: "Failed to create investment: " + (invError.message || invError.details || "unknown") }, { status: 500 });
     }
 
-    const action = deductBalance ? `deducted ${numAmount} POL` : "no deduction (promotional)";
-    await supabaseAdmin.from("transactions").insert({
-      user_id: userId,
-      type: "investment",
-      amount: deductBalance ? -numAmount : 0,
-      balance_before: balanceBefore,
-      balance_after: balanceAfter,
-      description: `Admin activated ${pkg.name} package (${numAmount} POL) - ${action} - ROI ${roiEnabled !== false ? "ON" : "OFF"}`,
-      status: "completed",
-    });
+    if (deductBalance) {
+      await supabaseAdmin.from("transactions").insert({
+        user_id: userId,
+        type: "investment",
+        amount: numAmount,
+        balance_before: balanceBefore,
+        balance_after: balanceAfter,
+        description: `Admin activated ${pkg.name} package (${numAmount} POL) - ROI ${roiEnabled !== false ? "ON" : "OFF"}`,
+        status: "completed",
+      });
+    }
 
     return NextResponse.json({
       success: true,
       roiEnabled: roiEnabled !== false,
-      deducted: deductBalance,
+      deducted: !!deductBalance,
     });
   } catch (error) {
+    console.error("activate-package error:", error);
     return handleApiError(error);
   }
 }

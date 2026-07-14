@@ -39,6 +39,7 @@ export default function AdminUsersPage() {
   const [pkgRoi, setPkgRoi] = useState(true);
   const [pkgDeduct, setPkgDeduct] = useState(true);
   const [pkgLoading, setPkgLoading] = useState(false);
+  const [pkgError, setPkgError] = useState("");
 
   useEffect(() => { loadData(); }, []);
 
@@ -127,14 +128,21 @@ export default function AdminUsersPage() {
   const activatePackage = async () => {
     if (!pkgModal || !pkgAmount) return;
     setPkgLoading(true);
-    const res = await fetch("/api/admin/activate-package", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: pkgModal.userId, packageType: pkgType, amount: parseFloat(pkgAmount), roiEnabled: pkgRoi, deductBalance: pkgDeduct }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      setPkgModal(null); setPkgAmount(""); loadData();
+    setPkgError("");
+    try {
+      const res = await fetch("/api/admin/activate-package", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: pkgModal.userId, packageType: pkgType, amount: parseFloat(pkgAmount), roiEnabled: pkgRoi, deductBalance: pkgDeduct }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPkgModal(null); setPkgAmount(""); loadData();
+      } else {
+        setPkgError(data.error || "Unknown error");
+      }
+    } catch (e: any) {
+      setPkgError(e.message || "Network error");
     }
     setPkgLoading(false);
   };
@@ -480,8 +488,11 @@ export default function AdminUsersPage() {
                 </button>
               </div>
             </div>
+            {pkgError && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-400 text-sm mt-3">{pkgError}</div>
+            )}
             <div className="flex gap-2 justify-end mt-4">
-              <button onClick={() => { setPkgModal(null); setPkgAmount(""); }} className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm">Cancel</button>
+              <button onClick={() => { setPkgModal(null); setPkgAmount(""); setPkgError(""); }} className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm">Cancel</button>
               <button onClick={activatePackage} disabled={pkgLoading || !pkgAmount} className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium">
                 {pkgLoading ? "Activating..." : "Activate"}
               </button>

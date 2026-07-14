@@ -27,7 +27,6 @@ const phases = [
     items: [
       "Referral Rewards Hub",
       "5-level CEX registration bonus",
-      "Root admin extended commissions (L6-L7)",
       "Leaderboard & ranking system",
       "Support ticket system",
       "Daily ROI auto-payout (12 AM UTC)",
@@ -243,10 +242,9 @@ export default function RoadmapPage() {
                 </svg>
               </div>
               <h3 className="text-white font-bold text-sm mb-1">Team Growth Rewards</h3>
-              <p className="text-zinc-400 text-xs">Earn additional CEX as your team grows. Root admin members earn extra bonuses at L6-L7 depth.</p>
+              <p className="text-zinc-400 text-xs">Earn additional CEX as your team grows. Level bonuses from L1 to L5 based on your network depth.</p>
               <div className="mt-3 flex flex-wrap gap-1.5">
-                <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-400">L6: 5 CEX</span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-400">L7: 3 CEX</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-400">L1-L5 Bonuses</span>
               </div>
             </div>
 

@@ -28,7 +28,7 @@ const faqs = [
   },
   {
     q: "What are Level Commissions?",
-    a: "When anyone in your team (up to 5 levels deep) invests, you earn a commission: L2 (5%), L3 (3%), L4 (2%), L5 (1%). Root admin members earn additional commissions at L6 (0.5%) and L7 (0.5%).",
+    a: "When anyone in your team (up to 5 levels deep) invests, you earn a commission: L2 (5%), L3 (3%), L4 (2%), L5 (1%).",
   },
   {
     q: "How does the binary matching bonus work?",

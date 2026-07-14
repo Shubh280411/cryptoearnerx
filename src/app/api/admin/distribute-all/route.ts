@@ -5,6 +5,89 @@ import { BINARY_REFERRAL_RATE, BINARY_MATCHING_RATE, LEVEL_COMMISSION_RATES } fr
 
 const CEX_RATE = 20;
 
+// Recalculate ALL binary volumes from scratch
+async function handleFixVolumes() {
+  // 1. Reset all volumes to 0
+  await supabaseAdmin.from("users").update({ left_volume: 0, right_volume: 0 }).neq("id", "00000000-0000-0000-0000-000000000000");
+
+  // 2. Get all investments
+  const { data: investments } = await supabaseAdmin
+    .from("investments")
+    .select("user_id, amount, status")
+    .eq("status", "active");
+
+  if (!investments || investments.length === 0) {
+    return { success: true, action: "fix-volumes", message: "No active investments", processed: 0 };
+  }
+
+  // 3. Get all users for tree lookups
+  const { data: allUsers } = await supabaseAdmin
+    .from("users")
+    .select("id, sponsor_id, left_child_id, right_child_id");
+
+  const userMap = new Map<string, any>();
+  (allUsers || []).forEach((u) => userMap.set(u.id, u));
+
+  let processed = 0;
+
+  for (const inv of investments) {
+    const investor = userMap.get(inv.user_id);
+    if (!investor) continue;
+
+    // Add half/half to investor's own volume
+    await supabaseAdmin.rpc("increment_binary_volume", {
+      p_user_id: inv.user_id,
+      p_left_add: inv.amount / 2,
+      p_right_add: inv.amount / 2,
+    });
+
+    // Propagate UP the sponsor tree
+    let childId: string = inv.user_id;
+    let parentId: string | null = investor.sponsor_id;
+
+    while (parentId) {
+      const parent = userMap.get(parentId);
+      if (!parent) break;
+
+      if (parent.left_child_id === childId) {
+        await supabaseAdmin.rpc("increment_binary_volume", {
+          p_user_id: parentId,
+          p_left_add: inv.amount,
+          p_right_add: 0,
+        });
+      } else if (parent.right_child_id === childId) {
+        await supabaseAdmin.rpc("increment_binary_volume", {
+          p_user_id: parentId,
+          p_left_add: 0,
+          p_right_add: inv.amount,
+        });
+      }
+
+      childId = parentId;
+      parentId = parent.sponsor_id;
+    }
+
+    processed++;
+  }
+
+  // 4. Verify final volumes
+  const { data: verifyUsers } = await supabaseAdmin
+    .from("users")
+    .select("id, name, left_volume, right_volume")
+    .order("created_at", { ascending: true });
+
+  return {
+    success: true,
+    action: "fix-volumes",
+    processed,
+    users: (verifyUsers || []).map((u) => ({
+      name: u.name,
+      left_volume: u.left_volume,
+      right_volume: u.right_volume,
+    })),
+  };
+}
+
 async function handleCreditLockedCex() {
   const { data: investments } = await supabaseAdmin
     .from("investments")
@@ -132,43 +215,6 @@ async function handleCommissionDistribute() {
         });
       }
 
-      await supabaseAdmin.rpc("increment_binary_volume", {
-        p_user_id: inv.user_id,
-        p_left_add: inv.amount / 2,
-        p_right_add: inv.amount / 2,
-      });
-
-      // Propagate volume UP the sponsor tree
-      let propagateId: string | null = investor.sponsor_id;
-      let currentInvestorId: string = inv.user_id;
-
-      while (propagateId) {
-        const { data: parent } = await supabaseAdmin
-          .from("users")
-          .select("left_child_id, right_child_id, sponsor_id")
-          .eq("id", propagateId)
-          .single();
-
-        if (!parent) break;
-
-        if (parent.left_child_id === currentInvestorId) {
-          await supabaseAdmin.rpc("increment_binary_volume", {
-            p_user_id: propagateId,
-            p_left_add: inv.amount,
-            p_right_add: 0,
-          });
-        } else if (parent.right_child_id === currentInvestorId) {
-          await supabaseAdmin.rpc("increment_binary_volume", {
-            p_user_id: propagateId,
-            p_left_add: 0,
-            p_right_add: inv.amount,
-          });
-        }
-
-        currentInvestorId = propagateId;
-        propagateId = parent.sponsor_id;
-      }
-
       let currentSponsorId = investor.sponsor_id;
       for (const tier of LEVEL_COMMISSION_RATES) {
         if (!currentSponsorId) break;
@@ -219,13 +265,15 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const action = body.action || "commission";
 
-    if (action === "credit-locked-cex") {
-      const result = await handleCreditLockedCex();
-      return NextResponse.json(result);
+    if (action === "fix-volumes") {
+      return NextResponse.json(await handleFixVolumes());
     }
 
-    const result = await handleCommissionDistribute();
-    return NextResponse.json(result);
+    if (action === "credit-locked-cex") {
+      return NextResponse.json(await handleCreditLockedCex());
+    }
+
+    return NextResponse.json(await handleCommissionDistribute());
   } catch (error) {
     return handleApiError(error);
   }

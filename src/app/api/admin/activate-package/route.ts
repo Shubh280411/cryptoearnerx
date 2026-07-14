@@ -79,6 +79,49 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Failed to create investment: " + (invError.message || invError.details || "unknown") }, { status: 500 });
     }
 
+    // Increment binary volume for the investor
+    await supabaseAdmin.rpc("increment_binary_volume", {
+      p_user_id: userId,
+      p_left_add: numAmount / 2,
+      p_right_add: numAmount / 2,
+    });
+
+    // Call MLM distribute for commissions + binary matching
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || "https://cryptoearnerx.online"}/api/mlm/distribute`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ investorId: userId, amount: numAmount }),
+      });
+    } catch (e) {
+      console.error("MLM distribute failed:", e);
+    }
+
+    // Credit locked CEX for investment
+    const lockedCEX = numAmount * 20;
+    const { data: currentWallet } = await supabaseAdmin
+      .from("wallet")
+      .select("locked_bonus_balance")
+      .eq("user_id", userId)
+      .single();
+
+    const currentLocked = parseFloat(currentWallet?.locked_bonus_balance || "0");
+
+    await supabaseAdmin
+      .from("wallet")
+      .update({ locked_bonus_balance: currentLocked + lockedCEX })
+      .eq("user_id", userId);
+
+    await supabaseAdmin.from("transactions").insert({
+      user_id: userId,
+      type: "invest_locked_cec",
+      amount: lockedCEX,
+      balance_before: currentLocked,
+      balance_after: currentLocked + lockedCEX,
+      description: `Investment CEX bonus - ${pkg.name} (${numAmount} POL = ${lockedCEX} CEX locked) - Admin activation`,
+      status: "completed",
+    });
+
     if (deductBalance) {
       await supabaseAdmin.from("transactions").insert({
         user_id: userId,
@@ -95,6 +138,7 @@ export async function POST(req: NextRequest) {
       success: true,
       roiEnabled: roiEnabled !== false,
       deducted: !!deductBalance,
+      lockedCEX,
     });
   } catch (error) {
     console.error("activate-package error:", error);

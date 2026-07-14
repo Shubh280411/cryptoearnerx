@@ -45,6 +45,16 @@ export async function middleware(req: NextRequest) {
     return res;
   }
 
+  // Admin login — if already logged in admin, redirect to /admin
+  if (pathname === "/admin/login") {
+    if (!user) return res;
+    const { data: profile } = await supabase.from("users").select("is_admin").eq("id", user.id).single();
+    if (profile?.is_admin) {
+      return NextResponse.redirect(new URL("/admin", req.url));
+    }
+    return res;
+  }
+
   // Banned page — allow for banned users, block for non-banned
   if (pathname === "/banned") {
     if (!user) {
@@ -92,6 +102,7 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/admin/:path*",
+    "/admin/login",
     "/wallet/:path*",
     "/deposit/:path*",
     "/withdraw/:path*",

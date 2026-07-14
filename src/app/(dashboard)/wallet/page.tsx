@@ -86,11 +86,15 @@ export default function WalletPage() {
         </div>
 
         <div className="bg-gradient-to-br from-purple-600/20 to-pink-600/20 border border-purple-600/20 rounded-xl p-6">
-          <p className="text-zinc-400 text-sm">CEX Coins Balance</p>
-          <p className="text-4xl font-bold text-purple-400 mt-2">{bonusBalance.toLocaleString()} CEX</p>
-          {lockedCEX > 0 && (
-            <p className="text-xs text-zinc-500 mt-2">+{lockedCEX.toLocaleString()} CEX locked (unlocks on listing)</p>
-          )}
+          <p className="text-zinc-400 text-sm flex items-center gap-1.5">
+            CEX Coins Balance
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          </p>
+          <p className="text-4xl font-bold text-purple-400 mt-2">{(bonusBalance + lockedCEX).toLocaleString()} CEX</p>
+          <p className="text-xs text-amber-400 mt-2 flex items-center gap-1">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            All locked — unlocks on listing
+          </p>
           <p className="text-xs text-zinc-500 mt-1">Free coins credited on signup & investing.</p>
         </div>
       </div>

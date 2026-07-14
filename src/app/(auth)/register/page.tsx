@@ -221,7 +221,7 @@ function RegisterForm() {
       await supabase.from("wallet").insert({
         user_id: authData.user.id,
         balance: 0,
-        bonus_balance: bonusAmount,
+        locked_bonus_balance: bonusAmount,
       });
 
       await supabase.from("transactions").insert({
@@ -230,7 +230,7 @@ function RegisterForm() {
         amount: bonusAmount,
         balance_before: 0,
         balance_after: bonusAmount,
-        description: `Registration Bonus! ${bonusAmount} CEX coins credited on signup`,
+        description: `Registration Bonus! ${bonusAmount} CEX coins credited on signup (locked)`,
         status: "completed",
       });
 

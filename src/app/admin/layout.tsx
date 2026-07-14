@@ -19,6 +19,7 @@ const adminNav = [
   { href: "/admin/staking", label: "Staking", icon: "lock" },
   { href: "/admin/notifications", label: "Notifications", icon: "bell" },
   { href: "/admin/support", label: "Support", icon: "headphones" },
+  { href: "/admin/otp-history", label: "OTP History", icon: "lock" },
   { href: "/admin/settings", label: "Settings", icon: "settings" },
 ];
 

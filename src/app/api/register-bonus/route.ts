@@ -51,25 +51,25 @@ export async function POST(req: NextRequest) {
 
       const { data: wallet } = await supabaseAdmin
         .from("wallet")
-        .select("bonus_balance")
+        .select("locked_bonus_balance")
         .eq("user_id", currentId)
         .single();
 
       if (wallet) {
-        const newBalance = (wallet.bonus_balance || 0) + bonus;
+        const newLocked = (wallet.locked_bonus_balance || 0) + bonus;
 
         await supabaseAdmin
           .from("wallet")
-          .update({ bonus_balance: newBalance })
+          .update({ locked_bonus_balance: newLocked })
           .eq("user_id", currentId);
 
         await supabaseAdmin.from("transactions").insert({
           user_id: currentId,
           type: "registration_bonus",
           amount: bonus,
-          balance_before: wallet.bonus_balance || 0,
-          balance_after: newBalance,
-          description: `Level ${level} registration bonus for new team member`,
+          balance_before: wallet.locked_bonus_balance || 0,
+          balance_after: newLocked,
+          description: `Level ${level} registration bonus for new team member (locked)`,
           status: "completed",
         });
 

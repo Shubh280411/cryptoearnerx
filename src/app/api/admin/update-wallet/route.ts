@@ -65,32 +65,34 @@ export async function POST(req: NextRequest) {
     }
 
     if (type === "cex") {
-      const currentBonus = parseFloat(wallet.bonus_balance);
-      if (action === "deduct" && currentBonus < numAmount) {
+      const currentLocked = parseFloat(wallet.locked_bonus_balance || "0");
+      if (action === "deduct" && currentLocked < numAmount) {
         return NextResponse.json({ error: "Insufficient CEX balance" }, { status: 400 });
       }
 
       const delta = action === "add" ? numAmount : -numAmount;
-      const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc("credit_bonus", {
-        p_user_id: userId,
-        p_amount: delta,
-      });
+      const newLocked = currentLocked + delta;
 
-      if (rpcError || !rpcResult?.success) {
-        return NextResponse.json({ error: rpcResult?.error || "Failed to update CEX" }, { status: 500 });
+      const { error: updateError } = await supabaseAdmin
+        .from("wallet")
+        .update({ locked_bonus_balance: newLocked })
+        .eq("user_id", userId);
+
+      if (updateError) {
+        return NextResponse.json({ error: "Failed to update CEX" }, { status: 500 });
       }
 
       await supabaseAdmin.from("transactions").insert({
         user_id: userId,
         type: "referral_bonus",
         amount: delta,
-        balance_before: currentBonus,
-        balance_after: rpcResult.new_bonus_balance,
-        description: `Admin ${action}: ${numAmount} CEX`,
+        balance_before: currentLocked,
+        balance_after: newLocked,
+        description: `Admin ${action}: ${numAmount} CEX (locked)`,
         status: "completed",
       });
 
-      return NextResponse.json({ success: true, newBonusBalance: rpcResult.new_bonus_balance });
+      return NextResponse.json({ success: true, newLockedBalance: newLocked });
     }
   } catch (error) {
     return handleApiError(error);

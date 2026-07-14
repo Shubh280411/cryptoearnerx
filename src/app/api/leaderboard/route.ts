@@ -15,13 +15,13 @@ export async function GET() {
     }
 
     const walletPromises = data.map((u) =>
-      supabaseAdmin.from("wallet").select("bonus_balance").eq("user_id", u.id).single()
+      supabaseAdmin.from("wallet").select("bonus_balance, locked_bonus_balance").eq("user_id", u.id).single()
     );
     const walletResults = await Promise.all(walletPromises);
 
     const enriched = data.map((u, i) => ({
       ...u,
-      cexBalance: walletResults[i].data?.bonus_balance || 0,
+      cexBalance: (walletResults[i].data?.bonus_balance || 0) + (walletResults[i].data?.locked_bonus_balance || 0),
     }));
 
     const sorted = enriched

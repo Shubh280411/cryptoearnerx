@@ -22,11 +22,11 @@ export default function ConvertPage() {
     if (!user) return;
 
     const [walletRes, countRes] = await Promise.all([
-      supabase.from("wallet").select("bonus_balance").eq("user_id", user.id).single(),
+      supabase.from("wallet").select("bonus_balance, locked_bonus_balance").eq("user_id", user.id).single(),
       supabase.from("users").select("id", { count: "exact", head: true }),
     ]);
 
-    if (walletRes.data) setCexBalance(walletRes.data.bonus_balance || 0);
+    if (walletRes.data) setCexBalance((walletRes.data.bonus_balance || 0) + (walletRes.data.locked_bonus_balance || 0));
     setMemberCount(countRes.count || 0);
     setLoading(false);
   };

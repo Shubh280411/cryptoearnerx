@@ -229,7 +229,10 @@ export default function AdminUsersPage() {
                           </div>
                         </td>
                         <td className="p-3 text-green-400">{formatPOL(w?.balance || 0)} POL</td>
-                        <td className="p-3 text-purple-400">{(w?.bonus_balance || 0).toLocaleString()}</td>
+                        <td className="p-3 text-purple-400 flex items-center gap-1">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                          {((w?.bonus_balance || 0) + (w?.locked_bonus_balance || 0)).toLocaleString()}
+                        </td>
                         <td className="p-3">
                           {pkg ? (
                             <div className="flex items-center gap-1.5">
@@ -329,8 +332,11 @@ export default function AdminUsersPage() {
                   <p className="text-sm text-green-400 font-medium">{formatPOL(wallets[detailUser.id]?.balance || 0)} POL</p>
                 </div>
                 <div className="bg-zinc-800/50 rounded-lg p-3">
-                  <p className="text-xs text-zinc-500">Bonus Balance</p>
-                  <p className="text-sm text-purple-400 font-medium">{(wallets[detailUser.id]?.bonus_balance || 0).toLocaleString()} CEX</p>
+                  <p className="text-xs text-zinc-500 flex items-center gap-1">
+                    CEX Coins (Locked)
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                  </p>
+                  <p className="text-sm text-purple-400 font-medium">{((wallets[detailUser.id]?.bonus_balance || 0) + (wallets[detailUser.id]?.locked_bonus_balance || 0)).toLocaleString()} CEX</p>
                 </div>
                 <div className="bg-zinc-800/50 rounded-lg p-3">
                   <p className="text-xs text-zinc-500">Locked CEX</p>

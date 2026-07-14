@@ -5,7 +5,7 @@ import {
   handleApiError,
   checkRateLimit,
 } from "@/lib/api/auth";
-import { getChildBalance, deriveChildWallet } from "@/lib/wallet";
+import { getChildBalance, deriveChildWallet, encryptPrivateKey } from "@/lib/wallet";
 import { ethers } from "ethers";
 
 export async function POST(req: NextRequest) {
@@ -143,7 +143,7 @@ export async function GET(req: NextRequest) {
       id: crypto.randomUUID(),
       user_id: user.id,
       address: childWallet.address,
-      private_key: childWallet.privateKey,
+      private_key: encryptPrivateKey(childWallet.privateKey),
       derivation_index: derivationIndex,
       network: "polygon",
       status: "active",

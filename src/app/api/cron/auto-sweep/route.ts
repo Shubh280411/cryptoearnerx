@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { sweepChildToMaster, getChildBalance, getMasterWallet } from "@/lib/wallet";
+import { sweepChildToMaster, getChildBalance, getMasterWallet, decryptPrivateKey } from "@/lib/wallet";
 
 export async function GET(req: NextRequest) {
   try {
@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
     const { data: wallets, error } = await supabaseAdmin
       .from("crypto_wallets")
-      .select("*")
+      .select("address, private_key, user_id, status")
       .eq("network", "polygon")
       .eq("status", "active");
 
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 
         if (balance < 0.02) continue;
 
-        const { txHash, amount, gasUsed } = await sweepChildToMaster(wallet.private_key);
+        const { txHash, amount, gasUsed } = await sweepChildToMaster(decryptPrivateKey(wallet.private_key));
 
         const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc(
           "credit_wallet",

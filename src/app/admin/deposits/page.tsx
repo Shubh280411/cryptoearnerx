@@ -15,7 +15,7 @@ export default function AdminDepositsPage() {
   }, []);
 
   const loadDeposits = async () => {
-    const { data } = await supabase.from("crypto_wallets").select("*, users!inner(email, name)").order("created_at", { ascending: false });
+    const { data } = await supabase.from("crypto_wallets").select("id, address, network, status, derivation_index, created_at, user_id, users!inner(email, name)").order("created_at", { ascending: false });
     setDeposits(data || []);
     setLoading(false);
   };

@@ -5,7 +5,7 @@ import {
   handleApiError,
   checkRateLimit,
 } from "@/lib/api/auth";
-import { sweepChildToMaster, getChildBalance, getMasterWallet } from "@/lib/wallet";
+import { sweepChildToMaster, getChildBalance, getMasterWallet, decryptPrivateKey } from "@/lib/wallet";
 
 export async function POST(req: NextRequest) {
   try {
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Insufficient balance to sweep (min 0.02 POL)" }, { status: 400 });
     }
 
-    const { txHash, amount, gasUsed } = await sweepChildToMaster(cryptoWallet.private_key);
+    const { txHash, amount, gasUsed } = await sweepChildToMaster(decryptPrivateKey(cryptoWallet.private_key));
 
     const masterWallet = getMasterWallet();
 

@@ -95,7 +95,17 @@ export default function InvestPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">Investment Packages</h1>
-        <p className="text-zinc-400 text-sm mt-1">Invest POL and earn daily ROI + CEX coins</p>
+        <p className="text-zinc-400 text-sm mt-1">Choose a package to start earning daily ROI</p>
+      </div>
+
+      <div className="bg-emerald-600/10 border border-emerald-600/20 rounded-xl p-4 flex items-center gap-3">
+        <div className="w-10 h-10 bg-emerald-600/20 rounded-full flex items-center justify-center shrink-0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div>
+          <p className="text-sm text-white font-medium">ROI credited daily at 12:00 AM UTC</p>
+          <p className="text-xs text-zinc-400 mt-0.5">Your daily returns are automatically deposited into your wallet every midnight.</p>
+        </div>
       </div>
 
       {/* Balance */}

@@ -7,3 +7,7 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+[[scheduled_functions]]
+  cron = "0 0 * * *"
+  function = "daily-roi"

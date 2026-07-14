@@ -84,6 +84,10 @@ export const LEVEL_COMMISSION_RATES = [
   { level: 4, rate: 2 },
   { level: 5, rate: 1 },
 ];
+export const ROOT_LEVEL_COMMISSIONS = [
+  { level: 6, rate: 0.5 },
+  { level: 7, rate: 0.5 },
+];
 export const CEX_LEVEL_BONUS: Record<number, number> = {
   1: 50,
   2: 40,

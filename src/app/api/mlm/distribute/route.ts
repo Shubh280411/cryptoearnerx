@@ -6,7 +6,7 @@ import {
   checkRateLimit,
   MlmDistributeSchema,
 } from "@/lib/api/auth";
-import { BINARY_REFERRAL_RATE, BINARY_MATCHING_RATE, LEVEL_COMMISSION_RATES } from "@/lib/constants";
+import { BINARY_REFERRAL_RATE, BINARY_MATCHING_RATE, LEVEL_COMMISSION_RATES, ROOT_LEVEL_COMMISSIONS } from "@/lib/constants";
 
 async function creditWithTransaction(
   userId: string,
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
       investor.sponsor_id,
       referralBonus,
       "referral_bonus",
-      `Referral bonus from ${investorId}`
+      "Referral bonus"
     );
 
     await supabaseAdmin.rpc("increment_binary_volume", {
@@ -82,7 +82,6 @@ export async function POST(req: NextRequest) {
       p_right_add: amount / 2,
     });
 
-    // Propagate volume UP the sponsor tree
     let propagateId: string | null = investor.sponsor_id;
     let currentInvestorId: string = investorId;
 
@@ -131,34 +130,54 @@ export async function POST(req: NextRequest) {
           investor.sponsor_id,
           binaryBonus,
           "binary_bonus",
-          `Binary matching bonus`
+          "Binary matching bonus"
         );
       }
     }
 
-    // Multi-level commissions: walk up the sponsor chain (max 5 levels)
+    const { data: rootAdmin } = await supabaseAdmin
+      .from("users")
+      .select("id")
+      .eq("is_admin", true)
+      .is("sponsor_id", null)
+      .single();
+
     const levelCommissions: { level: number; userId: string; amount: number }[] = [];
+
     let currentSponsorId = investor.sponsor_id;
+    let level = 2;
 
-    for (const tier of LEVEL_COMMISSION_RATES) {
-      if (!currentSponsorId) break;
+    while (currentSponsorId && level <= 7) {
+      const isRootAdmin = rootAdmin && currentSponsorId === rootAdmin.id;
 
-      const commissionAmount = amount * (tier.rate / 100);
-      if (commissionAmount < 0.01) break;
+      const normalTier = LEVEL_COMMISSION_RATES.find((t) => t.level === level);
+      const extraTier = ROOT_LEVEL_COMMISSIONS.find((t) => t.level === level);
 
-      const credited = await creditWithTransaction(
-        currentSponsorId,
-        commissionAmount,
-        "level_commission",
-        `Level ${tier.level} commission from downline investment`
-      );
+      let rate = 0;
+      if (normalTier) {
+        rate = normalTier.rate;
+      } else if (isRootAdmin && extraTier) {
+        rate = extraTier.rate;
+      }
 
-      if (credited.success) {
-        levelCommissions.push({
-          level: tier.level,
-          userId: currentSponsorId,
-          amount: commissionAmount,
-        });
+      if (rate > 0) {
+        const commissionAmount = amount * (rate / 100);
+        if (commissionAmount >= 0.01) {
+          const credited = await creditWithTransaction(
+            currentSponsorId,
+            commissionAmount,
+            "level_commission",
+            "Level commission"
+          );
+
+          if (credited.success) {
+            levelCommissions.push({
+              level,
+              userId: currentSponsorId,
+              amount: commissionAmount,
+            });
+          }
+        }
       }
 
       const { data: nextSponsor } = await supabaseAdmin
@@ -168,6 +187,7 @@ export async function POST(req: NextRequest) {
         .single();
 
       currentSponsorId = nextSponsor?.sponsor_id || null;
+      level++;
     }
 
     return NextResponse.json({

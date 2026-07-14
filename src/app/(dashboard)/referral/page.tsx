@@ -165,6 +165,7 @@ export default function ReferralPage() {
                     <span className={`w-2 h-2 rounded-full ${ref.is_active ? "bg-green-400" : "bg-zinc-500"}`} />
                     <div>
                       <p className="text-sm text-white">{ref.name || ref.email}</p>
+                      <p className="text-xs text-zinc-500">{ref.email}</p>
                       <p className="text-xs text-zinc-500">Joined {new Date(ref.created_at).toLocaleDateString()}</p>
                     </div>
                   </div>

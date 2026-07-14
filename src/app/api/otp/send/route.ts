@@ -59,7 +59,7 @@ export async function POST(req: Request) {
 
     // Send OTP email
     const { sendOTPEmail } = await import("@/lib/otpMailer");
-    const sent = await sendOTPEmail(email.toLowerCase(), otp);
+    const sent = await sendOTPEmail(email.toLowerCase(), otp, purpose);
 
     if (!sent) {
       return NextResponse.json({ error: "Failed to send email. Try again." }, { status: 500 });

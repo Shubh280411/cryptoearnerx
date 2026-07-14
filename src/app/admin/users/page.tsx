@@ -130,13 +130,19 @@ export default function AdminUsersPage() {
     setPkgLoading(true);
     setPkgError("");
     try {
+      const amount = parseFloat(pkgAmount);
       const res = await fetch("/api/admin/activate-package", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: pkgModal.userId, packageType: pkgType, amount: parseFloat(pkgAmount), roiEnabled: pkgRoi, deductBalance: pkgDeduct }),
+        body: JSON.stringify({ userId: pkgModal.userId, packageType: pkgType, amount, roiEnabled: pkgRoi, deductBalance: pkgDeduct }),
       });
       const data = await res.json();
       if (data.success) {
+        await fetch("/api/mlm/distribute", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ investorId: pkgModal.userId, amount }),
+        });
         setPkgModal(null); setPkgAmount(""); loadData();
       } else {
         setPkgError(data.error || "Unknown error");

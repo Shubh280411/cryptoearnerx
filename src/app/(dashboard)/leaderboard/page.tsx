@@ -1,31 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icons";
-
-async function getTeamCountsForUser(userId: string) {
-  let currentIds = [userId];
-  const counts: number[] = [];
-
-  for (let level = 1; level <= 5; level++) {
-    const { data } = await supabase
-      .from("users")
-      .select("id")
-      .in("sponsor_id", currentIds);
-
-    const members = data || [];
-    counts.push(members.length);
-    currentIds = members.map((u) => u.id);
-    if (currentIds.length === 0) {
-      while (counts.length < 5) counts.push(0);
-      break;
-    }
-  }
-
-  return counts;
-}
 
 export default function LeaderboardPage() {
   const [leaders, setLeaders] = useState<any[]>([]);
@@ -36,59 +13,19 @@ export default function LeaderboardPage() {
   }, []);
 
   const loadLeaderboard = async () => {
-    const { data } = await supabase
-      .from("users")
-      .select("id, name, email, rank, left_volume, right_volume, created_at")
-      .order("created_at", { ascending: true })
-      .limit(100);
-
-    if (data) {
-      const walletPromises = data.map((u) =>
-        supabase.from("wallet").select("bonus_balance").eq("user_id", u.id).single()
-      );
-      const walletResults = await Promise.all(walletPromises);
-
-      const enriched = data.map((u, i) => ({
-        ...u,
-        cexBalance: walletResults[i].data?.bonus_balance || 0,
-      }));
-
-      const sorted = enriched
-        .sort((a, b) => b.cexBalance - a.cexBalance)
-        .slice(0, 100);
-
-      const teamPromises = sorted.map((u) => getTeamCountsForUser(u.id));
-      const teamResults = await Promise.all(teamPromises);
-
-      const final = sorted.map((u, i) => ({
-        ...u,
-        teamCounts: teamResults[i],
-        totalTeam: teamResults[i].reduce((s, c) => s + c, 0),
-      }));
-
-      setLeaders(final);
+    const res = await fetch("/api/leaderboard");
+    const data = await res.json();
+    if (data.success) {
+      setLeaders(data.leaders);
     }
     setLoading(false);
   };
 
   const getMedal = (index: number) => {
-    if (index === 0) return "bg-yellow-500/10 text-yellow-400";
-    if (index === 1) return "bg-zinc-400/10 text-zinc-300";
-    if (index === 2) return "bg-orange-600/10 text-orange-400";
-    return "";
-  };
-
-  const getRankName = (rank: string) => {
-    const rankColors: Record<string, string> = {
-      member: "text-zinc-400",
-      bronze: "text-orange-400",
-      silver: "text-zinc-300",
-      gold: "text-yellow-400",
-      platinum: "text-purple-400",
-      diamond: "text-blue-400",
-      crown: "text-red-400",
-    };
-    return rankColors[rank] || "text-zinc-400";
+    if (index === 0) return "text-yellow-400";
+    if (index === 1) return "text-zinc-300";
+    if (index === 2) return "text-orange-400";
+    return "text-zinc-500";
   };
 
   if (loading) {
@@ -122,7 +59,6 @@ export default function LeaderboardPage() {
                     {idx === 0 ? "1st" : idx === 1 ? "2nd" : "3rd"}
                   </div>
                   <p className="text-white font-medium mt-3">{leader.name || leader.email?.split("@")[0]}</p>
-                  <p className={`text-sm capitalize ${getRankName(leader.rank)}`}>{leader.rank}</p>
                   <p className="text-purple-400 font-bold mt-2">{leader.cexBalance.toLocaleString()} CEX</p>
                   <p className="text-xs text-zinc-500 mt-1">Team: {leader.totalTeam}</p>
                 </div>
@@ -132,47 +68,44 @@ export default function LeaderboardPage() {
         </div>
       )}
 
-      {/* Full Leaderboard */}
-      <Card title="Full Leaderboard">
+      {/* Table */}
+      <Card>
         {leaders.length === 0 ? (
           <div className="text-center py-8">
             <Icon name="trophy" size={32} className="text-zinc-600 mx-auto mb-2" />
             <p className="text-zinc-400 text-sm">No data yet</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {leaders.map((leader, index) => (
-              <div key={leader.id} className={`p-3 bg-zinc-800/50 rounded-lg ${getMedal(index)}`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-sm font-bold text-zinc-400">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-zinc-800">
+                  <th className="text-left py-3 px-3 text-zinc-500 font-medium">#</th>
+                  <th className="text-left py-3 px-3 text-zinc-500 font-medium">USERNAME</th>
+                  <th className="text-right py-3 px-3 text-zinc-500 font-medium">CEX</th>
+                  <th className="text-right py-3 px-3 text-zinc-500 font-medium">Team</th>
+                </tr>
+              </thead>
+              <tbody>
+                {leaders.map((leader, index) => (
+                  <tr key={leader.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30">
+                    <td className={`py-3 px-3 font-medium ${getMedal(index)}`}>
                       {index + 1}
-                    </span>
-                    <div>
-                      <p className="text-sm text-white">{leader.name || leader.email?.split("@")[0]}</p>
-                      <p className={`text-xs capitalize ${getRankName(leader.rank)}`}>{leader.rank}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-purple-400">{leader.cexBalance.toLocaleString()} CEX</p>
-                  </div>
-                </div>
-                {leader.teamCounts && (
-                  <div className="flex gap-2 mt-2 pt-2 border-t border-zinc-700/50">
-                    {[0, 1, 2, 3, 4].map((i) => (
-                      <div key={i} className="flex-1 text-center">
-                        <p className="text-[10px] text-zinc-500">L{i + 1}</p>
-                        <p className="text-xs font-medium text-blue-400">{leader.teamCounts[i]}</p>
-                      </div>
-                    ))}
-                    <div className="flex-1 text-center border-l border-zinc-700/50">
-                      <p className="text-[10px] text-zinc-500">Total</p>
-                      <p className="text-xs font-bold text-white">{leader.totalTeam}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+                    </td>
+                    <td className="py-3 px-3">
+                      <p className="text-white font-medium">{leader.name || leader.email?.split("@")[0]}</p>
+                    </td>
+                    <td className="py-3 px-3 text-right">
+                      <span className="text-purple-400 font-bold">{leader.cexBalance.toLocaleString()}</span>
+                      <span className="text-zinc-500 ml-1">CEX</span>
+                    </td>
+                    <td className="py-3 px-3 text-right">
+                      <span className="text-white font-medium">{leader.totalTeam.toLocaleString()}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </Card>

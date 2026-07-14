@@ -4,7 +4,6 @@ import {
   requireAuth,
   handleApiError,
   checkRateLimit,
-  SweepSchema,
 } from "@/lib/api/auth";
 import { sweepChildToMaster, getChildBalance, getMasterWallet } from "@/lib/wallet";
 
@@ -15,84 +14,86 @@ export async function POST(req: NextRequest) {
     }
 
     const { user } = await requireAuth();
-
     const body = await req.json();
-    const parsed = SweepSchema.safeParse(body);
+    const { walletAddress } = body;
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0].message },
-        { status: 400 }
-      );
+    if (!walletAddress || typeof walletAddress !== "string") {
+      return NextResponse.json({ error: "walletAddress required" }, { status: 400 });
     }
-
-    const { walletAddress } = parsed.data;
 
     const { data: cryptoWallet } = await supabaseAdmin
       .from("crypto_wallets")
-      .select("*")
+      .select("address, private_key")
       .eq("address", walletAddress)
       .eq("user_id", user.id)
       .single();
 
     if (!cryptoWallet) {
-      return NextResponse.json(
-        { error: "Wallet not found or not owned by you" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Wallet not found or not owned by you" }, { status: 404 });
     }
 
-    const balance = await getChildBalance(walletAddress);
+    let balance = 0;
+    try {
+      balance = await getChildBalance(walletAddress);
+    } catch (e) {
+      return NextResponse.json({ error: "Failed to check wallet balance" }, { status: 500 });
+    }
+
     if (balance < 0.02) {
-      return NextResponse.json(
-        { error: "Insufficient balance to sweep (min 0.02 POL)" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Insufficient balance to sweep (min 0.02 POL)" }, { status: 400 });
     }
 
-    const { txHash, amount, gasUsed } = await sweepChildToMaster(
-      cryptoWallet.private_key
-    );
+    const { txHash, amount, gasUsed } = await sweepChildToMaster(cryptoWallet.private_key);
 
     const masterWallet = getMasterWallet();
 
-    const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc(
-      "credit_wallet",
-      {
+    let rpcResult: any = null;
+    let rpcError: any = null;
+
+    try {
+      const result = await supabaseAdmin.rpc("credit_wallet", {
         p_user_id: user.id,
         p_amount: amount,
-      }
-    );
-
-    if (rpcError || !rpcResult?.success) {
-      return NextResponse.json(
-        { error: rpcResult?.error || "Failed to credit wallet" },
-        { status: 500 }
-      );
+      });
+      rpcResult = result.data;
+      rpcError = result.error;
+    } catch (e) {
+      rpcError = e;
     }
 
-    await supabaseAdmin.from("transactions").insert([
-      {
-        user_id: user.id,
-        type: "deposit",
-        amount,
-        balance_before: rpcResult.previous_balance,
-        balance_after: rpcResult.new_balance,
-        description: `Sweep from ${walletAddress} to ${masterWallet.address}. Tx: ${txHash}`,
-        tx_hash: txHash,
-        status: "completed",
-      },
-      {
+    if (rpcError || !rpcResult?.success) {
+      const fallbackDesc = `Sweep from ${walletAddress} to ${masterWallet.address}. Tx: ${txHash}. Amount: ${amount} POL (credit failed - manual credit needed)`;
+      await supabaseAdmin.from("transactions").insert({
         user_id: user.id,
         type: "sweep",
-        amount: -gasUsed,
-        balance_before: rpcResult.new_balance,
-        balance_after: rpcResult.new_balance,
-        description: `Gas fee for sweep tx ${txHash}`,
+        amount: amount,
+        balance_before: 0,
+        balance_after: 0,
+        description: fallbackDesc,
         tx_hash: txHash,
         status: "completed",
-      },
-    ]);
+      });
+
+      return NextResponse.json({
+        success: true,
+        swept: amount,
+        gas: gasUsed,
+        txHash,
+        newBalance: 0,
+        warning: "Sweep successful but auto-credit failed. Admin manual credit needed.",
+      });
+    }
+
+    await supabaseAdmin.from("transactions").insert({
+      user_id: user.id,
+      type: "deposit",
+      amount,
+      balance_before: rpcResult.previous_balance,
+      balance_after: rpcResult.new_balance,
+      description: `Auto-sweep deposit. Tx: ${txHash}`,
+      tx_hash: txHash,
+      status: "completed",
+    });
 
     return NextResponse.json({
       success: true,

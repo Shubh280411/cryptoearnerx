@@ -16,7 +16,6 @@ export default function DepositPage() {
   const [loading, setLoading] = useState(true);
   const [addressLoading, setAddressLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [sweeping, setSweeping] = useState(false);
   const [depositHistory, setDepositHistory] = useState<any[]>([]);
   const [showHistory, setShowHistory] = useState(false);
 
@@ -24,26 +23,21 @@ export default function DepositPage() {
   const [creditedAmount, setCreditedAmount] = useState(0);
   const [newBalance, setNewBalance] = useState(0);
 
-  const [polling, setPolling] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
+  const [statusType, setStatusType] = useState<"waiting" | "processing" | "success" | "error">("waiting");
   const pollRef = useRef<NodeJS.Timeout | null>(null);
-  const lastBalanceRef = useRef(0);
-  const sweepingRef = useRef(false);
+  const initialBalanceRef = useRef(0);
+  const processingRef = useRef(false);
 
   useEffect(() => {
     loadBalances();
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, []);
 
   useEffect(() => {
-    if (selectedNetwork) {
-      generateAddress();
-    }
+    if (selectedNetwork) generateAddress();
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
-      setPolling(false);
       setStatusMsg("");
     };
   }, [selectedNetwork]);
@@ -51,11 +45,7 @@ export default function DepositPage() {
   const loadBalances = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { data: wallet } = await supabase
-      .from("wallet")
-      .select("balance")
-      .eq("user_id", user.id)
-      .single();
+    const { data: wallet } = await supabase.from("wallet").select("balance").eq("user_id", user.id).single();
     setPlatformBalance(wallet?.balance || 0);
     setLoading(false);
   };
@@ -70,8 +60,8 @@ export default function DepositPage() {
       if (data.address) {
         setDepositAddress(data.address);
         setOnChainBalance(data.balance || 0);
-        lastBalanceRef.current = data.balance || 0;
-        startPolling(data.address);
+        initialBalanceRef.current = data.balance || 0;
+        startPolling(data.address, data.balance || 0);
       }
     } catch (err) {
       console.error("Failed to generate address:", err);
@@ -79,36 +69,31 @@ export default function DepositPage() {
     setAddressLoading(false);
   };
 
-  const startPolling = useCallback((address: string) => {
+  const startPolling = useCallback((address: string, currentBalance: number) => {
     if (pollRef.current) clearInterval(pollRef.current);
-    setPolling(true);
-    setStatusMsg("Waiting for your deposit...");
+    setStatusMsg("Send any amount of POL to this address. We will auto-detect your deposit.");
+    setStatusType("waiting");
 
     pollRef.current = setInterval(async () => {
-      if (sweepingRef.current) return;
+      if (processingRef.current) return;
       try {
         const res = await fetch("/api/wallet/deposit");
         const data = await res.json();
         if (data.balance !== undefined) {
           setOnChainBalance(data.balance);
-          if (data.balance > 0.02 && data.balance > lastBalanceRef.current) {
-            lastBalanceRef.current = data.balance;
+          if (data.balance > 0.02 && data.balance > initialBalanceRef.current) {
             if (pollRef.current) clearInterval(pollRef.current);
-            setPolling(false);
-            setStatusMsg(`${data.balance.toFixed(4)} POL detected! Processing...`);
-            performSweep(address);
+            processingRef.current = true;
+            setStatusMsg("Funds detected! Sweeping to master wallet...");
+            setStatusType("processing");
+            await performAutoSweep(address);
           }
         }
-      } catch {
-        // RPC might fail, keep polling
-      }
-    }, 8000);
+      } catch { /* keep polling */ }
+    }, 6000);
   }, []);
 
-  const performSweep = async (walletAddress: string) => {
-    sweepingRef.current = true;
-    setSweeping(true);
-    setStatusMsg("Sweeping to master wallet...");
+  const performAutoSweep = async (walletAddress: string) => {
     try {
       const res = await fetch("/api/wallet/sweep", {
         method: "POST",
@@ -121,57 +106,28 @@ export default function DepositPage() {
         setNewBalance(data.newBalance);
         setShowSuccess(true);
         setOnChainBalance(0);
-        lastBalanceRef.current = 0;
-        loadBalances();
+        initialBalanceRef.current = 0;
         setStatusMsg("");
+        setStatusType("success");
+        loadBalances();
+        loadDepositHistory();
       } else {
-        setStatusMsg(`Sweep failed: ${data.error}. Retrying in 10s...`);
+        setStatusMsg(`Sweep failed: ${data.error}. Retrying...`);
+        setStatusType("error");
         setTimeout(() => {
-          sweepingRef.current = false;
-          setSweeping(false);
-          startPolling(walletAddress);
-        }, 10000);
-        return;
+          processingRef.current = false;
+          startPolling(walletAddress, 0);
+        }, 15000);
       }
     } catch {
-      setStatusMsg("Sweep failed. Retrying in 10s...");
+      setStatusMsg("Sweep failed. Retrying...");
+      setStatusType("error");
       setTimeout(() => {
-        sweepingRef.current = false;
-        setSweeping(false);
-        startPolling(walletAddress);
-      }, 10000);
-      return;
+        processingRef.current = false;
+        startPolling(walletAddress, 0);
+      }, 15000);
     }
-    sweepingRef.current = false;
-    setSweeping(false);
-  };
-
-  const handleManualSweep = async () => {
-    if (!depositAddress) return;
-    setSweeping(true);
-    setStatusMsg("Sweeping...");
-    try {
-      const res = await fetch("/api/wallet/sweep", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletAddress: depositAddress }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setCreditedAmount(data.swept);
-        setNewBalance(data.newBalance);
-        setShowSuccess(true);
-        setOnChainBalance(0);
-        lastBalanceRef.current = 0;
-        loadBalances();
-        setStatusMsg("");
-      } else {
-        setStatusMsg(`Error: ${data.error}`);
-      }
-    } catch {
-      setStatusMsg("Sweep failed. Try again.");
-    }
-    setSweeping(false);
+    processingRef.current = false;
   };
 
   const loadDepositHistory = async () => {
@@ -193,12 +149,18 @@ export default function DepositPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const statusColors = {
+    waiting: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    processing: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+    success: "bg-green-500/10 text-green-400 border-green-500/20",
+    error: "bg-red-500/10 text-red-400 border-red-500/20",
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-zinc-400 flex items-center gap-2">
-          <Icon name="refresh" size={20} className="animate-spin" />
-          Loading...
+          <Icon name="refresh" size={20} className="animate-spin" />Loading...
         </div>
       </div>
     );
@@ -246,13 +208,12 @@ export default function DepositPage() {
               if (pollRef.current) clearInterval(pollRef.current);
               setSelectedNetwork(null);
               setDepositAddress("");
-              setPolling(false);
               setStatusMsg("");
+              processingRef.current = false;
             }}
             className="flex items-center gap-2 text-zinc-400 hover:text-white text-sm transition-colors"
           >
-            <Icon name="arrowLeft" size={16} />
-            Change Network
+            <Icon name="arrowLeft" size={16} />Change Network
           </button>
 
           <Card>
@@ -270,8 +231,7 @@ export default function DepositPage() {
               {addressLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="text-zinc-400 flex items-center gap-2">
-                    <Icon name="refresh" size={20} className="animate-spin" />
-                    Generating your deposit address...
+                    <Icon name="refresh" size={20} className="animate-spin" />Generating your deposit address...
                   </div>
                 </div>
               ) : (
@@ -292,41 +252,34 @@ export default function DepositPage() {
                     {copied ? "Copied!" : "Copy Address"}
                   </Button>
 
+                  <div className="bg-zinc-800/50 rounded-lg p-4 flex items-center justify-between">
+                    <span className="text-zinc-400 text-sm">On-chain Balance</span>
+                    <span className="text-white font-medium">{onChainBalance.toFixed(4)} POL</span>
+                  </div>
+
                   {statusMsg && (
-                    <div className={`rounded-lg p-3 text-sm flex items-center gap-2 ${
-                      statusMsg.includes("failed") || statusMsg.includes("Error")
-                        ? "bg-red-500/10 text-red-400"
-                        : statusMsg.includes("detected") || statusMsg.includes("Swept")
-                          ? "bg-green-500/10 text-green-400"
-                          : "bg-blue-500/10 text-blue-400"
-                    }`}>
-                      {(polling || sweeping) && (
+                    <div className={`rounded-lg p-3 text-sm flex items-center gap-2 border ${statusColors[statusType]}`}>
+                      {(statusType === "waiting" || statusType === "processing") && (
                         <Icon name="refresh" size={14} className="animate-spin flex-shrink-0" />
+                      )}
+                      {statusType === "success" && (
+                        <Icon name="check" size={14} className="flex-shrink-0" />
+                      )}
+                      {statusType === "error" && (
+                        <Icon name="alertTriangle" size={14} className="flex-shrink-0" />
                       )}
                       {statusMsg}
                     </div>
                   )}
 
-                  {onChainBalance > 0.02 && onChainBalance <= lastBalanceRef.current && !sweeping && (
-                    <Button
-                      variant="primary"
-                      className="w-full bg-green-600 hover:bg-green-700"
-                      onClick={handleManualSweep}
-                    >
-                      <Icon name="download" size={16} />
-                      Sweep {onChainBalance.toFixed(4)} POL to Wallet
-                    </Button>
-                  )}
-
                   <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-sm text-amber-400 space-y-1">
                     <p className="font-medium flex items-center gap-2">
-                      <Icon name="alertTriangle" size={14} />
-                      Important:
+                      <Icon name="alertTriangle" size={14} />Important:
                     </p>
                     <ul className="list-disc list-inside text-xs space-y-0.5 text-amber-400/80">
                       <li>Send only POL on Polygon network</li>
                       <li>Minimum deposit: 0.02 POL</li>
-                      <li>Deposits are auto-detected and credited</li>
+                      <li>Deposits are auto-detected and credited instantly</li>
                       <li>Do NOT send from exchanges</li>
                     </ul>
                   </div>
@@ -401,7 +354,7 @@ export default function DepositPage() {
             </div>
             <div>
               <h2 className="text-2xl font-bold text-white mb-2">Deposit Successful!</h2>
-              <p className="text-zinc-400 text-sm">Your deposit has been credited to your wallet</p>
+              <p className="text-zinc-400 text-sm">Your deposit has been auto-swept and credited</p>
             </div>
             <div className="bg-zinc-800 rounded-xl p-4 space-y-2">
               <div className="flex items-center justify-between">

@@ -6,9 +6,9 @@ export async function GET() {
   try {
     const { data } = await supabaseAdmin
       .from("users")
-      .select("id, name, email, rank, created_at")
+      .select("id, name, email, rank, created_at, sponsor_id")
       .order("created_at", { ascending: true })
-      .limit(100);
+      .limit(200);
 
     if (!data) {
       return NextResponse.json({ success: true, leaders: [] });
@@ -19,6 +19,31 @@ export async function GET() {
     );
     const walletResults = await Promise.all(walletPromises);
 
+    const sponsorMap = new Map<string, string[]>();
+    for (const u of data) {
+      if (u.sponsor_id) {
+        const existing = sponsorMap.get(u.sponsor_id) || [];
+        existing.push(u.id);
+        sponsorMap.set(u.sponsor_id, existing);
+      }
+    }
+
+    function countTeam(userId: string): number {
+      let total = 0;
+      let currentIds = [userId];
+      for (let level = 0; level < 5; level++) {
+        const nextIds: string[] = [];
+        for (const cid of currentIds) {
+          const children = sponsorMap.get(cid) || [];
+          total += children.length;
+          nextIds.push(...children);
+        }
+        currentIds = nextIds;
+        if (currentIds.length === 0) break;
+      }
+      return total;
+    }
+
     const enriched = data.map((u, i) => ({
       ...u,
       cexBalance: (walletResults[i].data?.bonus_balance || 0) + (walletResults[i].data?.locked_bonus_balance || 0),
@@ -28,29 +53,12 @@ export async function GET() {
       .sort((a, b) => b.cexBalance - a.cexBalance)
       .slice(0, 100);
 
-    const teamPromises = sorted.map(async (u) => {
-      let total = 0;
-      let currentIds = [u.id];
-      for (let level = 1; level <= 5; level++) {
-        const { data: members } = await supabaseAdmin
-          .from("users")
-          .select("id")
-          .in("sponsor_id", currentIds);
-        const list = members || [];
-        total += list.length;
-        currentIds = list.map((m) => m.id);
-        if (currentIds.length === 0) break;
-      }
-      return total;
-    });
-    const teamResults = await Promise.all(teamPromises);
-
-    const final = sorted.map((u, i) => ({
+    const final = sorted.map((u) => ({
       id: u.id,
       name: u.name,
       email: u.email,
       cexBalance: u.cexBalance,
-      totalTeam: teamResults[i],
+      totalTeam: countTeam(u.id),
     }));
 
     return NextResponse.json({ success: true, leaders: final });

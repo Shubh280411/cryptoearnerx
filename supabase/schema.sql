@@ -72,7 +72,7 @@ CREATE TABLE investments (
 CREATE TABLE transactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-  type VARCHAR(30) NOT NULL CHECK (type IN ('deposit','withdrawal','investment','roi_payout','referral_bonus','binary_bonus','level_commission','leadership_bonus','sweep','staking_reward','withdrawal_fee','invest_locked_cec')),
+  type VARCHAR(30) NOT NULL CHECK (type IN ('deposit','withdrawal','investment','roi_payout','referral_bonus','binary_bonus','level_commission','leadership_bonus','sweep','staking_reward','withdrawal_fee','invest_locked_cex')),
   amount DECIMAL(18,8) NOT NULL,
   balance_before DECIMAL(18,8) DEFAULT 0,
   balance_after DECIMAL(18,8) DEFAULT 0,

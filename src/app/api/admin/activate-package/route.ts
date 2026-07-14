@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
 
     await supabaseAdmin.from("transactions").insert({
       user_id: userId,
-      type: "invest_locked_cec",
+      type: "invest_locked_cex",
       amount: lockedCEX,
       balance_before: currentLocked,
       balance_after: currentLocked + lockedCEX,

@@ -53,11 +53,10 @@ export default function InvestPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const res = await fetch("/api/wallet/deposit", {
+    const res = await fetch("/api/invest", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        userId: user.id,
         amount,
         packageType: selectedPkg,
       }),
@@ -66,7 +65,12 @@ export default function InvestPage() {
     const data = await res.json();
 
     if (data.success) {
-      setMessage({ type: "success", text: `Successfully invested ${amount} POL in ${pkg.name}!` });
+      await fetch("/api/mlm/distribute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ investorId: user.id, amount }),
+      });
+      setMessage({ type: "success", text: data.message || `Successfully invested ${amount} POL in ${pkg.name}! You received ${data.lockedCEX || 0} CEX (locked).` });
       setInvestAmount("");
       setSelectedPkg(null);
       loadWallet();

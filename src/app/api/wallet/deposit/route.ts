@@ -4,9 +4,9 @@ import {
   requireAuth,
   handleApiError,
   checkRateLimit,
-  DepositSchema,
 } from "@/lib/api/auth";
 import { getChildBalance, deriveChildWallet } from "@/lib/wallet";
+import { ethers } from "ethers";
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,16 +17,46 @@ export async function POST(req: NextRequest) {
     const { user } = await requireAuth();
 
     const body = await req.json();
-    const parsed = DepositSchema.safeParse(body);
+    const { txHash } = body;
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0].message },
-        { status: 400 }
-      );
+    if (!txHash || typeof txHash !== "string") {
+      return NextResponse.json({ error: "Transaction hash required" }, { status: 400 });
     }
 
-    const { amount, txHash } = parsed.data;
+    const provider = new ethers.JsonRpcProvider(
+      process.env.POLYGON_RPC_URL || "https://polygon-bor-rpc.publicnode.com"
+    );
+
+    const tx = await provider.getTransaction(txHash);
+    if (!tx) {
+      return NextResponse.json({ error: "Transaction not found on-chain" }, { status: 400 });
+    }
+
+    if (!tx.blockNumber) {
+      return NextResponse.json({ error: "Transaction not yet confirmed" }, { status: 400 });
+    }
+
+    const { data: cryptoWallet } = await supabaseAdmin
+      .from("crypto_wallets")
+      .select("address")
+      .eq("user_id", user.id)
+      .eq("network", "polygon")
+      .single();
+
+    if (!cryptoWallet) {
+      return NextResponse.json({ error: "No deposit wallet found" }, { status: 400 });
+    }
+
+    const toAddress = tx.to?.toLowerCase();
+    if (toAddress !== cryptoWallet.address.toLowerCase()) {
+      return NextResponse.json({ error: "Transaction not sent to your deposit address" }, { status: 400 });
+    }
+
+    const amount = parseFloat(ethers.formatEther(tx.value));
+
+    if (amount < 0.01) {
+      return NextResponse.json({ error: "Amount too small (min 0.01 POL)" }, { status: 400 });
+    }
 
     const { data: existingTx } = await supabaseAdmin
       .from("transactions")
@@ -57,16 +87,17 @@ export async function POST(req: NextRequest) {
     await supabaseAdmin.from("transactions").insert({
       user_id: user.id,
       type: "deposit",
-      amount: amount,
+      amount,
       balance_before: rpcResult.previous_balance,
       balance_after: rpcResult.new_balance,
-      description: `Deposit of ${amount} POL`,
+      description: `Deposit of ${amount} POL verified on-chain`,
       tx_hash: txHash,
       status: "completed",
     });
 
     return NextResponse.json({
       success: true,
+      amount,
       newBalance: rpcResult.new_balance,
     });
   } catch (error) {
@@ -80,7 +111,7 @@ export async function GET(req: NextRequest) {
 
     const { data: existing } = await supabaseAdmin
       .from("crypto_wallets")
-      .select("*")
+      .select("address, derivation_index")
       .eq("user_id", user.id)
       .eq("network", "polygon")
       .single();
@@ -90,7 +121,7 @@ export async function GET(req: NextRequest) {
       try {
         balance = await getChildBalance(existing.address);
       } catch (e) {
-        // RPC might fail, that's ok
+        // RPC might fail
       }
       return NextResponse.json({
         address: existing.address,
@@ -106,7 +137,6 @@ export async function GET(req: NextRequest) {
       .limit(1);
 
     const derivationIndex = (existingWallets?.[0]?.derivation_index ?? -1) + 1;
-
     const childWallet = deriveChildWallet(derivationIndex);
 
     await supabaseAdmin.from("crypto_wallets").insert({

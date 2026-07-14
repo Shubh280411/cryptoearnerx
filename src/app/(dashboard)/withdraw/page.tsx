@@ -205,7 +205,7 @@ export default function WithdrawPage() {
           <div>
             <p className="text-zinc-400 text-sm">Available for Withdrawal</p>
             <p className="text-3xl font-bold text-white mt-1">{formatPOL(balance)} POL</p>
-            <p className="text-xs text-zinc-500 mt-1">Min: 25 POL | Fee: 1 POL</p>
+            <p className="text-xs text-zinc-500 mt-1">Min: 25 POL | Fee: 5%</p>
           </div>
           <div className="w-16 h-16 bg-amber-600/10 rounded-xl flex items-center justify-center">
             <Icon name="upload" size={32} className="text-amber-400" />
@@ -256,12 +256,12 @@ export default function WithdrawPage() {
                   <span>{formatPOL(Number(amount))} POL</span>
                 </div>
                 <div className="flex justify-between text-zinc-400">
-                  <span>Fee</span>
-                  <span>1.00 POL</span>
+                  <span>Fee (5%)</span>
+                  <span>{(Number(amount) * 0.05).toFixed(4)} POL</span>
                 </div>
                 <div className="border-t border-zinc-700 pt-1 flex justify-between text-white font-medium">
                   <span>You Receive</span>
-                  <span>{formatPOL(Number(amount) - 1)} POL</span>
+                  <span>{formatPOL(Number(amount) * 0.95)} POL</span>
                 </div>
               </div>
             )}

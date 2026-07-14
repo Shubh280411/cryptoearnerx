@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { requireAuth, handleApiError } from "@/lib/api/auth";
-import { MIN_WITHDRAWAL, WITHDRAWAL_FEE } from "@/lib/constants";
+import { MIN_WITHDRAWAL, WITHDRAWAL_FEE_PERCENT } from "@/lib/constants";
 
 export async function POST(req: NextRequest) {
   try {
@@ -42,8 +42,11 @@ export async function POST(req: NextRequest) {
 
     const currentBalance = parseFloat(wallet?.balance || "0");
 
-    if (currentBalance < numAmount) {
-      return NextResponse.json({ error: "Insufficient balance" }, { status: 400 });
+    const fee = numAmount * (WITHDRAWAL_FEE_PERCENT / 100);
+    const totalDeduction = numAmount + fee;
+
+    if (currentBalance < totalDeduction) {
+      return NextResponse.json({ error: `Insufficient balance. Need ${totalDeduction.toFixed(4)} POL (${numAmount} + ${fee.toFixed(4)} fee)` }, { status: 400 });
     }
 
     const { error: wdError } = await supabaseAdmin.from("withdrawals").insert({
@@ -59,7 +62,7 @@ export async function POST(req: NextRequest) {
 
     const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc("credit_wallet", {
       p_user_id: user.id,
-      p_amount: -(numAmount + WITHDRAWAL_FEE),
+      p_amount: -totalDeduction,
     });
 
     if (rpcError || !rpcResult?.success) {
@@ -70,17 +73,18 @@ export async function POST(req: NextRequest) {
     await supabaseAdmin.from("transactions").insert({
       user_id: user.id,
       type: "withdrawal",
-      amount: -(numAmount + WITHDRAWAL_FEE),
+      amount: -totalDeduction,
       balance_before: rpcResult.previous_balance,
       balance_after: rpcResult.new_balance,
-      description: `Withdrawal of ${numAmount} POL (fee: ${WITHDRAWAL_FEE} POL)`,
+      description: `Withdrawal of ${numAmount} POL (${WITHDRAWAL_FEE_PERCENT}% fee: ${fee.toFixed(4)} POL)`,
       status: "completed",
     });
 
     return NextResponse.json({
       success: true,
       newBalance: rpcResult.new_balance,
-      message: "Withdrawal request submitted! It will be processed within 24 hours.",
+      fee: fee.toFixed(4),
+      message: `Withdrawal of ${numAmount} POL submitted! Fee: ${fee.toFixed(4)} POL (${WITHDRAWAL_FEE_PERCENT}%). Processing within 24 hours.`,
     });
   } catch (error) {
     return handleApiError(error);

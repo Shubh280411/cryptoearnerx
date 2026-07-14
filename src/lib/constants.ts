@@ -102,6 +102,6 @@ export const ROOT_CEX_LEVEL_BONUS: Record<number, number> = {
 
 export const MIN_DEPOSIT = 0.1;
 export const MIN_WITHDRAWAL = 25;
-export const WITHDRAWAL_FEE = 1;
+export const WITHDRAWAL_FEE_PERCENT = 5;
 export const PLATFORM_FEE = 2;
 export const SWEEP_GAS_LIMIT = 0.01;

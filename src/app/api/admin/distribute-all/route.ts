@@ -18,7 +18,7 @@ async function handleCreditLockedCex() {
   const { data: existingTx } = await supabaseAdmin
     .from("transactions")
     .select("user_id, description")
-    .eq("type", "referral_bonus")
+    .eq("type", "invest_locked_cec")
     .like("description", "%Investment CEX bonus%");
 
   const alreadyCredited = new Set<string>();
@@ -54,7 +54,7 @@ async function handleCreditLockedCex() {
 
       await supabaseAdmin.from("transactions").insert({
         user_id: inv.user_id,
-        type: "referral_bonus",
+        type: "invest_locked_cec",
         amount: lockedCEX,
         balance_before: currentLocked,
         balance_after: currentLocked + lockedCEX,

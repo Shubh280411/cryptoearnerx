@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
 
     await supabaseAdmin.from("transactions").insert({
       user_id: user.id,
-      type: "referral_bonus",
+      type: "invest_locked_cec",
       amount: lockedCEX,
       balance_before: currentLocked,
       balance_after: currentLocked + lockedCEX,

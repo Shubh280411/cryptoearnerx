@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icons";
 import { formatPOL } from "@/lib/utils";
 import { PACKAGES } from "@/lib/constants";
+import { ReferralRewardsHub } from "@/components/ReferralRewardsHub";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 interface DashboardData {
@@ -404,6 +405,9 @@ export default function DashboardPage() {
           </div>
         </Card>
       </div>
+
+      {/* Referral Rewards Hub */}
+      <ReferralRewardsHub />
 
       {/* Live Feed + Earning Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

@@ -211,6 +211,8 @@ export default function LandingPage() {
             </div>
             <div className="flex items-center gap-6 text-sm text-zinc-400 flex-wrap justify-center">
               <Link href="/about" className="hover:text-white transition-colors">About</Link>
+              <Link href="/faq" className="hover:text-white transition-colors">FAQ</Link>
+              <Link href="/roadmap" className="hover:text-white transition-colors">Roadmap</Link>
               <Link href="/legal" className="hover:text-white transition-colors">Legal</Link>
               <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
               <Link href="/cookies" className="hover:text-white transition-colors">Cookies</Link>

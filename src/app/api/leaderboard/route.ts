@@ -14,10 +14,16 @@ export async function GET() {
       return NextResponse.json({ success: true, leaders: [] });
     }
 
-    const walletPromises = data.map((u) =>
-      supabaseAdmin.from("wallet").select("bonus_balance, locked_bonus_balance").eq("user_id", u.id).single()
-    );
-    const walletResults = await Promise.all(walletPromises);
+    const userIds = data.map((u) => u.id);
+    const { data: wallets } = await supabaseAdmin
+      .from("wallet")
+      .select("user_id, bonus_balance, locked_bonus_balance")
+      .in("user_id", userIds);
+
+    const walletMap = new Map<string, { bonus_balance: number; locked_bonus_balance: number }>();
+    for (const w of wallets || []) {
+      walletMap.set(w.user_id, { bonus_balance: w.bonus_balance || 0, locked_bonus_balance: w.locked_bonus_balance || 0 });
+    }
 
     const sponsorMap = new Map<string, string[]>();
     for (const u of data) {
@@ -44,10 +50,13 @@ export async function GET() {
       return total;
     }
 
-    const enriched = data.map((u, i) => ({
-      ...u,
-      cexBalance: (walletResults[i].data?.bonus_balance || 0) + (walletResults[i].data?.locked_bonus_balance || 0),
-    }));
+    const enriched = data.map((u) => {
+      const w = walletMap.get(u.id);
+      return {
+        ...u,
+        cexBalance: (w?.bonus_balance || 0) + (w?.locked_bonus_balance || 0),
+      };
+    });
 
     const sorted = enriched
       .sort((a, b) => b.cexBalance - a.cexBalance)

@@ -6,9 +6,15 @@ import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icons";
 import { formatPOL } from "@/lib/utils";
 
+const CEX_TYPES = ["registration_bonus", "invest_locked_cex", "cex_unlock"];
+
+function isCECTx(type: string) {
+  return CEX_TYPES.includes(type);
+}
+
 export default function EarningsPage() {
   const [transactions, setTransactions] = useState<any[]>([]);
-  const [stats, setStats] = useState({ total: 0, roi: 0, referral: 0, binary: 0, staking: 0 });
+  const [stats, setStats] = useState({ total: 0, roi: 0, referral: 0, binary: 0, cex: 0 });
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
 
@@ -30,11 +36,11 @@ export default function EarningsPage() {
     const earnings = txs.filter((t) => t.amount > 0);
 
     setStats({
-      total: earnings.reduce((s, t) => s + t.amount, 0),
+      total: earnings.filter((t) => !isCECTx(t.type)).reduce((s, t) => s + t.amount, 0),
       roi: earnings.filter((t) => t.type === "roi_payout").reduce((s, t) => s + t.amount, 0),
       referral: earnings.filter((t) => t.type === "referral_bonus").reduce((s, t) => s + t.amount, 0),
       binary: earnings.filter((t) => t.type === "binary_bonus").reduce((s, t) => s + t.amount, 0),
-      staking: earnings.filter((t) => t.type === "staking_reward").reduce((s, t) => s + t.amount, 0),
+      cex: earnings.filter((t) => isCECTx(t.type)).reduce((s, t) => s + t.amount, 0),
     });
 
     setTransactions(txs);
@@ -63,22 +69,23 @@ export default function EarningsPage() {
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {[
-          { label: "Total Earned", value: stats.total, color: "text-white" },
+          { label: "Total POL", value: stats.total, color: "text-white" },
           { label: "ROI Income", value: stats.roi, color: "text-green-400" },
           { label: "Referral", value: stats.referral, color: "text-blue-400" },
           { label: "Binary", value: stats.binary, color: "text-purple-400" },
-          { label: "Staking", value: stats.staking, color: "text-amber-400" },
+          { label: "CEX Coins", value: stats.cex, color: "text-purple-400" },
         ].map((s) => (
           <Card key={s.label}>
             <p className="text-xs text-zinc-500">{s.label}</p>
-            <p className={`text-lg font-bold mt-1 ${s.color}`}>{formatPOL(s.value)} POL</p>
+            <p className={`text-lg font-bold mt-1 ${s.color}`}>
+              {s.label === "CEX Coins" ? `${s.value.toLocaleString()} CEX` : `${formatPOL(s.value)} POL`}
+            </p>
           </Card>
         ))}
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-2">
-        {["all", "roi_payout", "referral_bonus", "binary_bonus", "staking_reward", "leadership_bonus"].map((f) => (
+        {["all", "roi_payout", "referral_bonus", "binary_bonus", "registration_bonus", "invest_locked_cex"].map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -91,7 +98,6 @@ export default function EarningsPage() {
         ))}
       </div>
 
-      {/* Transaction List */}
       <Card title="All Earnings">
         {filtered.length === 0 ? (
           <div className="text-center py-8">
@@ -115,7 +121,7 @@ export default function EarningsPage() {
                 </div>
                 <div className="text-right">
                   <p className={`text-sm font-medium ${tx.amount > 0 ? "text-green-400" : "text-red-400"}`}>
-                    {tx.amount > 0 ? "+" : ""}{formatPOL(tx.amount)} POL
+                    {tx.amount > 0 ? "+" : ""}{isCECTx(tx.type) ? `${tx.amount.toLocaleString()} CEX` : `${formatPOL(tx.amount)} POL`}
                   </p>
                   <p className="text-xs text-zinc-500">{new Date(tx.created_at).toLocaleDateString()}</p>
                 </div>

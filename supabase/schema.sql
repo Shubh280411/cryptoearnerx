@@ -56,10 +56,10 @@ CREATE TABLE wallet (
 CREATE TABLE investments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-  package_type VARCHAR(20) NOT NULL CHECK (package_type IN ('bronze','silver','gold','platinum','diamond')),
+  package_type VARCHAR(20) NOT NULL CHECK (package_type IN ('starter','basic','premium','vip','elite')),
   amount DECIMAL(18,8) NOT NULL CHECK (amount > 0),
   investment_source VARCHAR(10) DEFAULT 'pol' CHECK (investment_source IN ('pol','cex')),
-  daily_roi DECIMAL(5,4) NOT NULL CHECK (daily_roi > 0),
+  daily_roi DECIMAL(6,2) NOT NULL CHECK (daily_roi > 0),
   duration_days INT NOT NULL CHECK (duration_days > 0),
   start_date TIMESTAMP DEFAULT NOW(),
   end_date TIMESTAMP NOT NULL,

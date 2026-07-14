@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { CEX_LEVEL_BONUS } from "@/lib/constants";
+import { CEX_LEVEL_BONUS, ROOT_CEX_LEVEL_BONUS } from "@/lib/constants";
 
 export async function POST(req: NextRequest) {
   try {
@@ -39,15 +39,33 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 5-level CEX bonus
+    // 5-level CEX bonus for everyone + L6-L7 extra for root admin
+    const { data: rootAdmin } = await supabaseAdmin
+      .from("users")
+      .select("id")
+      .eq("is_admin", true)
+      .is("sponsor_id", null)
+      .single();
+
     const credited: { level: number; userId: string; amount: number }[] = [];
     let currentId = newUser.sponsor_id;
 
-    for (let level = 1; level <= 5; level++) {
+    for (let level = 1; level <= 7; level++) {
       if (!currentId) break;
 
-      const bonus = CEX_LEVEL_BONUS[level];
-      if (!bonus) break;
+      const bonus = CEX_LEVEL_BONUS[level] || 0;
+      const rootBonus = (rootAdmin && currentId === rootAdmin.id) ? (ROOT_CEX_LEVEL_BONUS[level] || 0) : 0;
+      const totalBonus = bonus + rootBonus;
+
+      if (totalBonus <= 0) {
+        const { data: nextUser } = await supabaseAdmin
+          .from("users")
+          .select("sponsor_id")
+          .eq("id", currentId)
+          .single();
+        currentId = nextUser?.sponsor_id || null;
+        continue;
+      }
 
       const { data: wallet } = await supabaseAdmin
         .from("wallet")
@@ -56,7 +74,7 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (wallet) {
-        const newLocked = (wallet.locked_bonus_balance || 0) + bonus;
+        const newLocked = (wallet.locked_bonus_balance || 0) + totalBonus;
 
         await supabaseAdmin
           .from("wallet")
@@ -66,14 +84,14 @@ export async function POST(req: NextRequest) {
         await supabaseAdmin.from("transactions").insert({
           user_id: currentId,
           type: "registration_bonus",
-          amount: bonus,
+          amount: totalBonus,
           balance_before: wallet.locked_bonus_balance || 0,
           balance_after: newLocked,
-          description: `Level ${level} registration bonus for new team member (locked)`,
+          description: `Level ${level} registration bonus (locked)`,
           status: "completed",
         });
 
-        credited.push({ level, userId: currentId, amount: bonus });
+        credited.push({ level, userId: currentId, amount: totalBonus });
       }
 
       const { data: nextUser } = await supabaseAdmin

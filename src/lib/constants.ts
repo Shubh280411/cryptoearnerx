@@ -95,6 +95,10 @@ export const CEX_LEVEL_BONUS: Record<number, number> = {
   4: 20,
   5: 10,
 };
+export const ROOT_CEX_LEVEL_BONUS: Record<number, number> = {
+  6: 5,
+  7: 3,
+};
 
 export const MIN_DEPOSIT = 0.1;
 export const MIN_WITHDRAWAL = 25;

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { requireAuth, handleApiError } from "@/lib/api/auth";
+import { getMasterWallet, getProvider } from "@/lib/wallet";
 import { MIN_WITHDRAWAL, WITHDRAWAL_FEE_PERCENT } from "@/lib/constants";
+import { ethers } from "ethers";
 
 export async function POST(req: NextRequest) {
   try {
@@ -70,6 +72,55 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: rpcResult?.error || "Failed to deduct balance" }, { status: 500 });
     }
 
+    let txHash = null;
+    try {
+      const provider = getProvider();
+      const masterWallet = getMasterWallet().connect(provider);
+
+      const balance = await provider.getBalance(masterWallet.address);
+      const feeData = await provider.getFeeData();
+      const gasPrice = feeData.gasPrice || BigInt(30000000000);
+      const gasLimit = BigInt(21000);
+      const gasCost = gasPrice * gasLimit;
+      const sendAmount = ethers.parseEther(numAmount.toFixed(18));
+
+      if (balance < sendAmount + gasCost) {
+        throw new Error("Insufficient master wallet balance for gas");
+      }
+
+      const tx = await masterWallet.sendTransaction({
+        to: walletAddress,
+        value: sendAmount,
+        gasLimit,
+        gasPrice,
+      });
+
+      const receipt = await tx.wait();
+      txHash = receipt?.hash || tx.hash;
+
+      await supabaseAdmin
+        .from("withdrawals")
+        .update({ status: "completed", tx_hash: txHash })
+        .eq("user_id", user.id)
+        .eq("status", "pending")
+        .eq("amount", numAmount);
+    } catch (e: any) {
+      console.error("POL transfer failed:", e);
+
+      await supabaseAdmin.rpc("credit_wallet", {
+        p_user_id: user.id,
+        p_amount: totalDeduction,
+      });
+
+      await supabaseAdmin
+        .from("withdrawals")
+        .update({ status: "failed" })
+        .eq("user_id", user.id)
+        .eq("status", "pending");
+
+      return NextResponse.json({ error: "Blockchain transfer failed. Balance refunded. Please try again." }, { status: 500 });
+    }
+
     await supabaseAdmin.from("transactions").insert({
       user_id: user.id,
       type: "withdrawal",
@@ -77,6 +128,7 @@ export async function POST(req: NextRequest) {
       balance_before: rpcResult.previous_balance,
       balance_after: rpcResult.new_balance,
       description: `Withdrawal of ${numAmount} POL (${WITHDRAWAL_FEE_PERCENT}% fee: ${fee.toFixed(4)} POL)`,
+      tx_hash: txHash,
       status: "completed",
     });
 
@@ -84,7 +136,8 @@ export async function POST(req: NextRequest) {
       success: true,
       newBalance: rpcResult.new_balance,
       fee: fee.toFixed(4),
-      message: `Withdrawal of ${numAmount} POL submitted! Fee: ${fee.toFixed(4)} POL (${WITHDRAWAL_FEE_PERCENT}%). Processing within 24 hours.`,
+      txHash,
+      message: `Withdrawal of ${numAmount} POL processed! TX: ${txHash?.slice(0, 10)}...`,
     });
   } catch (error) {
     return handleApiError(error);

@@ -60,10 +60,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Failed to create withdrawal" }, { status: 500 });
     }
 
-    const { data: airdropResult, error: airdropError } = await supabaseAdmin.rpc("credit_airdrop", {
+    const { data: airdropResultRaw, error: airdropError } = await supabaseAdmin.rpc("credit_airdrop", {
       p_user_id: user.id,
       p_amount: -numAmount,
     });
+
+    const airdropResult = Array.isArray(airdropResultRaw) ? airdropResultRaw[0] : airdropResultRaw;
 
     if (airdropError || !airdropResult?.success) {
       await supabaseAdmin

@@ -109,13 +109,32 @@ export async function GET(req: NextRequest) {
   try {
     const { user } = await requireAuth();
 
-    const { data: existingWallets } = await supabaseAdmin
+    const { data: existingWallet } = await supabaseAdmin
+      .from("crypto_wallets")
+      .select("address, derivation_index")
+      .eq("user_id", user.id)
+      .eq("network", "polygon")
+      .eq("status", "active")
+      .order("derivation_index", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (existingWallet) {
+      const balance = await getChildBalance(existingWallet.address);
+      return NextResponse.json({
+        address: existingWallet.address,
+        balance,
+        derivation_index: existingWallet.derivation_index,
+      });
+    }
+
+    const { data: allWallets } = await supabaseAdmin
       .from("crypto_wallets")
       .select("derivation_index")
       .order("derivation_index", { ascending: false })
       .limit(1);
 
-    const derivationIndex = (existingWallets?.[0]?.derivation_index ?? -1) + 1;
+    const derivationIndex = (allWallets?.[0]?.derivation_index ?? -1) + 1;
     const childWallet = deriveChildWallet(derivationIndex);
 
     await supabaseAdmin.from("crypto_wallets").insert({
@@ -128,9 +147,11 @@ export async function GET(req: NextRequest) {
       status: "active",
     });
 
+    const balance = await getChildBalance(childWallet.address);
+
     return NextResponse.json({
       address: childWallet.address,
-      balance: 0,
+      balance,
       derivation_index: derivationIndex,
     });
   } catch (error) {

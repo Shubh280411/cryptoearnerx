@@ -107,6 +107,7 @@ export const PLATFORM_FEE = 2;
 export const SWEEP_GAS_LIMIT = 0.01;
 
 export const SPARK_TOKEN_ADDRESS = process.env.SPARK_TOKEN_ADDRESS || "0x6142ea089A7E2dC39752e956c22Db974CDD0E8E7";
+export const SPARK_WALLET_ADDRESS = "0x22c0E6AB45cAFc15b304F2D0dBfB3A09e765eAfC";
 export const SPARK_REGISTRATION_BONUS = 5;
 export const SPARK_LEVEL_BONUS: Record<number, number> = {
   1: 3,

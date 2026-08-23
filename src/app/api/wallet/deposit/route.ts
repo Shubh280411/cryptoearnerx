@@ -109,22 +109,30 @@ export async function GET(req: NextRequest) {
   try {
     const { user } = await requireAuth();
 
-    const { data: existingWallet } = await supabaseAdmin
+    const { data: existingWallets } = await supabaseAdmin
       .from("crypto_wallets")
       .select("address, derivation_index")
       .eq("user_id", user.id)
       .eq("network", "polygon")
       .eq("status", "active")
-      .order("derivation_index", { ascending: false })
-      .limit(1)
-      .single();
+      .order("derivation_index", { ascending: false });
 
-    if (existingWallet) {
-      const balance = await getChildBalance(existingWallet.address);
+    if (existingWallets && existingWallets.length > 0) {
+      let bestWallet = existingWallets[0];
+      let bestBalance = await getChildBalance(bestWallet.address);
+
+      for (const wallet of existingWallets) {
+        const bal = await getChildBalance(wallet.address);
+        if (bal > bestBalance) {
+          bestWallet = wallet;
+          bestBalance = bal;
+        }
+      }
+
       return NextResponse.json({
-        address: existingWallet.address,
-        balance,
-        derivation_index: existingWallet.derivation_index,
+        address: bestWallet.address,
+        balance: bestBalance,
+        derivation_index: bestWallet.derivation_index,
       });
     }
 

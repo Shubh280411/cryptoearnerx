@@ -78,7 +78,15 @@ export default function DepositPage() {
       if (processingRef.current) return;
       try {
         const res = await fetch("/api/wallet/deposit");
+        if (!res.ok) {
+          console.error("Deposit polling failed:", res.status, res.statusText);
+          return;
+        }
         const data = await res.json();
+        if (data.error) {
+          console.error("Deposit polling error:", data.error);
+          return;
+        }
         if (data.balance !== undefined) {
           setOnChainBalance(data.balance);
           if (data.balance > 0.02 && data.balance > initialBalanceRef.current) {
@@ -89,7 +97,9 @@ export default function DepositPage() {
             await performAutoSweep(address);
           }
         }
-      } catch { /* keep polling */ }
+      } catch (e) {
+        console.error("Deposit polling exception:", e);
+      }
     }, 6000);
   }, []);
 
@@ -118,14 +128,17 @@ export default function DepositPage() {
           processingRef.current = false;
           startPolling(walletAddress, 0);
         }, 15000);
+        return;
       }
-    } catch {
+    } catch (e) {
+      console.error("Auto-sweep exception:", e);
       setStatusMsg("Sweep failed. Retrying...");
       setStatusType("error");
       setTimeout(() => {
         processingRef.current = false;
         startPolling(walletAddress, 0);
       }, 15000);
+      return;
     }
     processingRef.current = false;
   };

@@ -9,11 +9,11 @@ import { sweepChildToMaster, getChildBalance, getMasterWallet, decryptPrivateKey
 
 export async function POST(req: NextRequest) {
   try {
-    if (!checkRateLimit("sweep", 5, 60000)) {
+    const { user } = await requireAuth();
+
+    if (!checkRateLimit(`sweep:${user.id}`, 5, 60000)) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
-
-    const { user } = await requireAuth();
     const body = await req.json();
     const { walletAddress } = body;
 

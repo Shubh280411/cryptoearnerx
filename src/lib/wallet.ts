@@ -2,8 +2,15 @@ import { ethers } from "ethers";
 import crypto from "crypto";
 
 const MASTER_PRIVATE_KEY = process.env.MASTER_PRIVATE_KEY || process.env.SWEEP_PRIVATE_KEY;
+const SPARK_PRIVATE_KEY = process.env.SPARK_WALLET_PRIVATE_KEY;
 const POLYGON_RPC_URL = process.env.POLYGON_RPC_URL || "https://polygon-bor-rpc.publicnode.com";
 const ENC_KEY_HEX = process.env.WALLET_ENCRYPTION_KEY;
+
+const ERC20_ABI = [
+  "function transfer(address to, uint256 amount) returns (bool)",
+  "function balanceOf(address owner) view returns (uint256)",
+  "function decimals() view returns (uint8)",
+];
 
 function getEncKey(): Buffer {
   if (!ENC_KEY_HEX) throw new Error("WALLET_ENCRYPTION_KEY not set in .env.local");
@@ -115,4 +122,36 @@ export async function getMasterBalance(): Promise<number> {
   const wallet = getMasterWallet();
   const balance = await provider.getBalance(wallet.address);
   return parseFloat(ethers.formatEther(balance));
+}
+
+export async function getSparkBalance(address: string): Promise<number> {
+  const provider = getProvider();
+  const contract = new ethers.Contract(process.env.SPARK_TOKEN_ADDRESS || "0x6142ea089A7E2dC39752e956c22Db974CDD0E8E7", ERC20_ABI, provider);
+  const balance = await contract.balanceOf(address);
+  return parseFloat(ethers.formatUnits(balance, 18));
+}
+
+export async function sparkTransfer(
+  toAddress: string,
+  amount: number
+): Promise<{ txHash: string; amount: number }> {
+  if (!SPARK_PRIVATE_KEY) {
+    throw new Error("SPARK_WALLET_PRIVATE_KEY not set in .env.local");
+  }
+
+  const provider = getProvider();
+  const wallet = new ethers.Wallet(SPARK_PRIVATE_KEY, provider);
+  const tokenAddress = process.env.SPARK_TOKEN_ADDRESS || "0x6142ea089A7E2dC39752e956c22Db974CDD0E8E7";
+  const contract = new ethers.Contract(tokenAddress, ERC20_ABI, wallet);
+
+  const decimals = 18;
+  const amountBigInt = ethers.parseUnits(amount.toFixed(decimals), decimals);
+
+  const tx = await contract.transfer(toAddress, amountBigInt);
+  const receipt = await tx.wait();
+
+  return {
+    txHash: receipt?.hash || tx.hash,
+    amount,
+  };
 }

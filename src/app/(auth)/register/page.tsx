@@ -222,17 +222,29 @@ function RegisterForm() {
         user_id: authData.user.id,
         balance: 0,
         locked_bonus_balance: bonusAmount,
+        airdrop_balance: 5,
       });
 
-      await supabase.from("transactions").insert({
-        user_id: authData.user.id,
-        type: "registration_bonus",
-        amount: bonusAmount,
-        balance_before: 0,
-        balance_after: bonusAmount,
-        description: `Registration Bonus! ${bonusAmount} CEX coins credited on signup (locked)`,
-        status: "completed",
-      });
+      await supabase.from("transactions").insert([
+        {
+          user_id: authData.user.id,
+          type: "registration_bonus",
+          amount: bonusAmount,
+          balance_before: 0,
+          balance_after: bonusAmount,
+          description: `Registration Bonus! ${bonusAmount} CEX coins credited on signup (locked)`,
+          status: "completed",
+        },
+        {
+          user_id: authData.user.id,
+          type: "spark_airdrop",
+          amount: 5,
+          balance_before: 0,
+          balance_after: 5,
+          description: "SPARK Airdrop! 5 SPARK credited on signup",
+          status: "completed",
+        },
+      ]);
 
       if (sponsorId) {
         await fetch("/api/register-bonus", {

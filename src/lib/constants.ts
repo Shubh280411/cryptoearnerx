@@ -105,3 +105,12 @@ export const MIN_WITHDRAWAL = 25;
 export const WITHDRAWAL_FEE_PERCENT = 5;
 export const PLATFORM_FEE = 2;
 export const SWEEP_GAS_LIMIT = 0.01;
+
+export const SPARK_TOKEN_ADDRESS = process.env.SPARK_TOKEN_ADDRESS || "0x6142ea089A7E2dC39752e956c22Db974CDD0E8E7";
+export const SPARK_REGISTRATION_BONUS = 5;
+export const SPARK_LEVEL_BONUS: Record<number, number> = {
+  1: 3,
+  2: 2,
+  3: 1,
+};
+export const MIN_SPARK_WITHDRAWAL = 10;

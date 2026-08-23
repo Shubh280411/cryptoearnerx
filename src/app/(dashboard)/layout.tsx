@@ -13,6 +13,7 @@ const navItems = [
   { href: "/wallet", label: "Wallet", icon: "wallet" },
   { href: "/deposit", label: "Deposit", icon: "download" },
   { href: "/withdraw", label: "Withdraw", icon: "upload" },
+  { href: "/withdraw-airdrop", label: "Withdraw SPARK", icon: "coins" },
   { href: "/invest", label: "Invest", icon: "package" },
   { href: "/investments", label: "My Packages", icon: "layers" },
   { href: "/earnings", label: "Earnings", icon: "chart" },

@@ -10,7 +10,12 @@ export type TransactionType =
   | "level_commission"
   | "leadership_bonus"
   | "staking_reward"
-  | "sweep";
+  | "sweep"
+  | "invest_locked_cex"
+  | "registration_bonus"
+  | "cex_unlock"
+  | "spark_airdrop"
+  | "spark_withdrawal";
 export type TransactionStatus = "pending" | "completed" | "failed";
 export type WithdrawalStatus = "pending" | "processing" | "completed" | "rejected";
 export type Rank = "member" | "bronze" | "silver" | "gold" | "platinum" | "diamond" | "crown";
@@ -39,6 +44,7 @@ export interface Wallet {
   balance: number;
   bonus_balance: number;
   locked_bonus_balance: number;
+  airdrop_balance: number;
   total_deposited: number;
   total_withdrawn: number;
   total_invested: number;

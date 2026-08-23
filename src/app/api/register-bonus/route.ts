@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { CEX_LEVEL_BONUS, ROOT_CEX_LEVEL_BONUS } from "@/lib/constants";
+import { CEX_LEVEL_BONUS, ROOT_CEX_LEVEL_BONUS, SPARK_LEVEL_BONUS } from "@/lib/constants";
 
 export async function POST(req: NextRequest) {
   try {
@@ -92,6 +92,34 @@ export async function POST(req: NextRequest) {
         });
 
         credited.push({ level, userId: currentId, amount: totalBonus });
+      }
+
+      const sparkBonus = SPARK_LEVEL_BONUS[level] || 0;
+      if (sparkBonus > 0) {
+        const { data: sparkWallet } = await supabaseAdmin
+          .from("wallet")
+          .select("airdrop_balance")
+          .eq("user_id", currentId)
+          .single();
+
+        if (sparkWallet) {
+          const newAirdrop = (sparkWallet.airdrop_balance || 0) + sparkBonus;
+
+          await supabaseAdmin
+            .from("wallet")
+            .update({ airdrop_balance: newAirdrop })
+            .eq("user_id", currentId);
+
+          await supabaseAdmin.from("transactions").insert({
+            user_id: currentId,
+            type: "spark_airdrop",
+            amount: sparkBonus,
+            balance_before: sparkWallet.airdrop_balance || 0,
+            balance_after: newAirdrop,
+            description: `Level ${level} SPARK airdrop bonus`,
+            status: "completed",
+          });
+        }
       }
 
       const { data: nextUser } = await supabaseAdmin

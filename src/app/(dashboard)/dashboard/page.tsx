@@ -146,6 +146,20 @@ export default function DashboardPage() {
     loadDashboard();
   }, [loadDashboard]);
 
+  useEffect(() => {
+    const feedInterval = setInterval(async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("users")
+        .select("id, name, created_at")
+        .order("created_at", { ascending: false })
+        .limit(5);
+      if (data) setRecentJoinees(data as any);
+    }, 10000);
+    return () => clearInterval(feedInterval);
+  }, []);
+
   const copyReferral = () => {
     const link = `${window.location.origin}/register?ref=${data.referralCode}`;
     navigator.clipboard.writeText(link);
@@ -174,7 +188,14 @@ export default function DashboardPage() {
   };
 
   const timeAgo = (dateStr: string) => {
-    const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+    let dateStrFixed = dateStr;
+    if (!dateStr.endsWith("Z") && !dateStr.includes("+") && !dateStr.includes("T")) {
+      dateStrFixed = dateStr.replace(" ", "T") + "Z";
+    } else if (!dateStr.endsWith("Z") && !dateStr.includes("+")) {
+      dateStrFixed = dateStr + "Z";
+    }
+    const seconds = Math.floor((Date.now() - new Date(dateStrFixed).getTime()) / 1000);
+    if (seconds < 0) return "just now";
     if (seconds < 60) return "just now";
     const minutes = Math.floor(seconds / 60);
     if (minutes < 60) return `${minutes} min ago`;

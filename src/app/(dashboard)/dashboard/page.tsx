@@ -232,17 +232,23 @@ export default function DashboardPage() {
         </Card>
 
         <Card>
-          <div>
-            <p className="text-zinc-400 text-xs">SPARK Balance</p>
-            <p className="text-lg font-bold text-purple-400 mt-1">{data.sparkBalance.toLocaleString()} SPARK</p>
+          <div className="flex items-center gap-2.5">
+            <img src="/spark-logo-sm.png" alt="SPARK" className="w-9 h-9 rounded-full shrink-0" />
+            <div>
+              <p className="text-zinc-400 text-xs">SPARK Balance</p>
+              <p className="text-lg font-bold text-purple-400 mt-1">{data.sparkBalance.toLocaleString()} SPARK</p>
+            </div>
           </div>
         </Card>
 
         <Card>
-          <div>
-            <p className="text-zinc-400 text-xs">CEX Coins</p>
-            <p className="text-lg font-bold text-amber-400 mt-1">{(data.bonusBalance + data.lockedCEX).toLocaleString()} CEX</p>
-            <p className="text-[10px] text-zinc-500 mt-0.5">Locked</p>
+          <div className="flex items-center gap-2.5">
+            <img src="/cex-logo-sm.png" alt="CEX" className="w-9 h-9 rounded-full shrink-0" />
+            <div>
+              <p className="text-zinc-400 text-xs">CEX Coins</p>
+              <p className="text-lg font-bold text-amber-400 mt-1">{(data.bonusBalance + data.lockedCEX).toLocaleString()} CEX</p>
+              <p className="text-[10px] text-zinc-500 mt-0.5">Locked</p>
+            </div>
           </div>
         </Card>
 

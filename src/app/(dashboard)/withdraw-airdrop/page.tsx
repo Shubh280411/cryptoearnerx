@@ -228,12 +228,10 @@ export default function WithdrawAirdropPage() {
                 <div className="spark-coin-ring" />
                 <div className="spark-coin">
                   <div className="spark-coin-face spark-coin-front">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                    </svg>
+                    <img src="/spark-logo-64.png" alt="SPARK" className="w-[42px] h-[42px] object-contain rounded-full" />
                   </div>
                   <div className="spark-coin-face spark-coin-back">
-                    <span className="text-white text-lg font-bold">S</span>
+                    <img src="/spark-logo-64.png" alt="SPARK" className="w-[42px] h-[42px] object-contain rounded-full" />
                   </div>
                 </div>
                 <div className="spark-coin-status" />

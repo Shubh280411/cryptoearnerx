@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Icon } from "@/components/ui/icons";
+import { OtpSpamNotice } from "@/components/ui/otp-spam-notice";
 
 export default function RegisterPage() {
   return (
@@ -36,6 +37,7 @@ function RegisterForm() {
   const [otpVerified, setOtpVerified] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpTimer, setOtpTimer] = useState(0);
+  const [showSpamNotice, setShowSpamNotice] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -75,6 +77,7 @@ function RegisterForm() {
     if (res.ok) {
       setOtpSent(true);
       setSuccess("OTP sent! Check your email.");
+      setShowSpamNotice(true);
       setOtpTimer(60);
       const interval = setInterval(() => {
         setOtpTimer((t) => {
@@ -284,6 +287,10 @@ function RegisterForm() {
                 <Icon name="check" size={16} />
                 {success}
               </div>
+            )}
+
+            {showSpamNotice && otpSent && (
+              <OtpSpamNotice onClose={() => setShowSpamNotice(false)} />
             )}
 
             <Input

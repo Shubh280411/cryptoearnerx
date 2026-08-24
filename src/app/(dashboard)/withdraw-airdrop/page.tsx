@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Icon } from "@/components/ui/icons";
+import { OtpSpamNotice } from "@/components/ui/otp-spam-notice";
 
 const SPARK_ADDRESS = "0x6142ea089A7E2dC39752e956c22Db974CDD0E8E7";
 const SPARK_WALLET = "0x22c0E6AB45cAFc15b304F2D0dBfB3A09e765eAfC";
@@ -44,6 +45,7 @@ export default function WithdrawAirdropPage() {
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [otpTimer, setOtpTimer] = useState(0);
   const [otpLoading, setOtpLoading] = useState(false);
+  const [showSpamNotice, setShowSpamNotice] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -94,6 +96,7 @@ export default function WithdrawAirdropPage() {
       setOtpSent(true);
       setOtpTimer(60);
       setOtp(["", "", "", "", "", ""]);
+      setShowSpamNotice(true);
       setTimeout(() => inputRefs.current[0]?.focus(), 100);
     } else {
       setError(data.error || "Failed to send OTP");
@@ -433,6 +436,9 @@ export default function WithdrawAirdropPage() {
                   </p>
                   {otpSent && <button type="button" onClick={resetOTP} className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">Change</button>}
                 </div>
+                {showSpamNotice && otpSent && (
+                  <OtpSpamNotice onClose={() => setShowSpamNotice(false)} />
+                )}
                 {!otpSent ? (
                   <Button type="button" variant="secondary" className="w-full" onClick={handleSendOTP} disabled={otpLoading}>
                     {otpLoading ? "Sending..." : "Send OTP to Email"}

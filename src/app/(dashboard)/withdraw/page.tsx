@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Icon } from "@/components/ui/icons";
+import { OtpSpamNotice } from "@/components/ui/otp-spam-notice";
 import { formatPOL } from "@/lib/utils";
 
 export default function WithdrawPage() {
@@ -24,6 +25,7 @@ export default function WithdrawPage() {
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [otpTimer, setOtpTimer] = useState(0);
   const [otpLoading, setOtpLoading] = useState(false);
+  const [showSpamNotice, setShowSpamNotice] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -69,6 +71,7 @@ export default function WithdrawPage() {
       setOtpSent(true);
       setOtpTimer(60);
       setOtp(["", "", "", "", "", ""]);
+      setShowSpamNotice(true);
       setTimeout(() => inputRefs.current[0]?.focus(), 100);
     } else {
       setError(data.error || "Failed to send OTP");
@@ -280,6 +283,9 @@ export default function WithdrawPage() {
                     </button>
                   )}
                 </div>
+                {showSpamNotice && otpSent && (
+                  <OtpSpamNotice onClose={() => setShowSpamNotice(false)} />
+                )}
 
                 {!otpSent ? (
                   <Button type="button" variant="secondary" className="w-full" onClick={handleSendOTP} disabled={otpLoading}>

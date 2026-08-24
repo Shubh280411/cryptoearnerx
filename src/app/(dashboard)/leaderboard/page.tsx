@@ -3,14 +3,47 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icons";
+import { supabase } from "@/lib/supabase/client";
 
 export default function LeaderboardPage() {
   const [leaders, setLeaders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userStats, setUserStats] = useState({ cex: 0, referralEarned: 0, teamSize: 0 });
 
   useEffect(() => {
     loadLeaderboard();
+    loadUserStats();
   }, []);
+
+  const loadUserStats = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const [walletRes, txRes, teamRes] = await Promise.all([
+      supabase.from("wallet").select("bonus_balance, locked_bonus_balance").eq("user_id", user.id).single(),
+      supabase.from("transactions").select("amount, type").eq("user_id", user.id).eq("status", "completed"),
+      supabase.from("users").select("id").eq("sponsor_id", user.id),
+    ]);
+
+    const cex = (walletRes.data?.bonus_balance || 0) + (walletRes.data?.locked_bonus_balance || 0);
+    const referralEarned = (txRes.data || [])
+      .filter((t: any) => t.type === "referral_bonus" && t.amount > 0)
+      .reduce((s: number, t: any) => s + t.amount, 0);
+
+    // Recursive team count
+    let teamSize = 0;
+    async function countTeam(sponsorId: string) {
+      const { data: children } = await supabase.from("users").select("id").eq("sponsor_id", sponsorId);
+      if (!children || children.length === 0) return;
+      teamSize += children.length;
+      for (const child of children) {
+        await countTeam(child.id);
+      }
+    }
+    await countTeam(user.id);
+
+    setUserStats({ cex, referralEarned, teamSize });
+  };
 
   const loadLeaderboard = async () => {
     const res = await fetch("/api/leaderboard");
@@ -21,19 +54,12 @@ export default function LeaderboardPage() {
     setLoading(false);
   };
 
-  const getMedal = (index: number) => {
-    if (index === 0) return "text-yellow-400";
-    if (index === 1) return "text-zinc-300";
-    if (index === 2) return "text-orange-400";
-    return "text-zinc-500";
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-zinc-400 flex items-center gap-2">
           <Icon name="refresh" size={20} className="animate-spin" />
-          Loading...
+          Loading leaderboard...
         </div>
       </div>
     );
@@ -41,74 +67,108 @@ export default function LeaderboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-white">Leaderboard</h1>
-        <p className="text-zinc-400 text-sm mt-1">Top 100 CEX coin holders</p>
+        <p className="text-zinc-400 text-sm mt-1">Top performers ranked by CEX balance</p>
       </div>
 
-      {/* Top 3 Podium */}
-      {leaders.length >= 3 && (
-        <div className="grid grid-cols-3 gap-4">
-          {[1, 0, 2].map((idx) => {
-            const leader = leaders[idx];
-            if (!leader) return null;
-            return (
-              <Card key={leader.id}>
-                <div className="text-center py-4">
-                  <div className={`w-16 h-16 rounded-full mx-auto flex items-center justify-center text-2xl font-bold ${getMedal(idx)}`}>
-                    {idx === 0 ? "1st" : idx === 1 ? "2nd" : "3rd"}
-                  </div>
-                  <p className="text-white font-medium mt-3">{leader.name || leader.email?.split("@")[0]}</p>
-                  <p className="text-purple-400 font-bold mt-2">{leader.cexBalance.toLocaleString()} CEX</p>
-                  <p className="text-xs text-zinc-500 mt-1">Team: {leader.totalTeam}</p>
-                </div>
-              </Card>
-            );
-          })}
+      {/* User Stats Row */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-center">
+          <p className="text-zinc-500 text-xs mb-1">Airdrop</p>
+          <p className="text-xl font-bold text-amber-400">{userStats.cex.toLocaleString()}</p>
+          <p className="text-zinc-600 text-[10px] mt-1">CEX balance</p>
         </div>
-      )}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-center">
+          <p className="text-zinc-500 text-xs mb-1">Referral earned</p>
+          <p className="text-xl font-bold text-green-400">{userStats.referralEarned.toLocaleString()}</p>
+          <p className="text-zinc-600 text-[10px] mt-1">Total bonus</p>
+        </div>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-center">
+          <p className="text-zinc-500 text-xs mb-1">Team</p>
+          <p className="text-xl font-bold text-blue-400">{userStats.teamSize.toLocaleString()}</p>
+          <p className="text-zinc-600 text-[10px] mt-1">Total members</p>
+        </div>
+      </div>
 
-      {/* Table */}
-      <Card>
+      {/* Leaderboard Table */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+        {/* Table Header */}
+        <div className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-zinc-800 text-xs font-medium text-zinc-500 uppercase tracking-wider">
+          <div className="col-span-1">#</div>
+          <div className="col-span-5">Username</div>
+          <div className="col-span-3 text-right">CEX</div>
+          <div className="col-span-3 text-right">Team</div>
+        </div>
+
         {leaders.length === 0 ? (
-          <div className="text-center py-8">
-            <Icon name="trophy" size={32} className="text-zinc-600 mx-auto mb-2" />
+          <div className="text-center py-12">
+            <Icon name="trophy" size={40} className="text-zinc-600 mx-auto mb-3" />
             <p className="text-zinc-400 text-sm">No data yet</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-zinc-800">
-                  <th className="text-left py-3 px-3 text-zinc-500 font-medium">#</th>
-                  <th className="text-left py-3 px-3 text-zinc-500 font-medium">USERNAME</th>
-                  <th className="text-right py-3 px-3 text-zinc-500 font-medium">CEX</th>
-                  <th className="text-right py-3 px-3 text-zinc-500 font-medium">Team</th>
-                </tr>
-              </thead>
-              <tbody>
-                {leaders.map((leader, index) => (
-                  <tr key={leader.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30">
-                    <td className={`py-3 px-3 font-medium ${getMedal(index)}`}>
-                      {index + 1}
-                    </td>
-                    <td className="py-3 px-3">
-                      <p className="text-white font-medium">{leader.name || leader.email?.split("@")[0]}</p>
-                    </td>
-                    <td className="py-3 px-3 text-right">
-                      <span className="text-purple-400 font-bold">{leader.cexBalance.toLocaleString()}</span>
-                      <span className="text-zinc-500 ml-1">CEX</span>
-                    </td>
-                    <td className="py-3 px-3 text-right">
-                      <span className="text-white font-medium">{leader.totalTeam.toLocaleString()}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div>
+            {leaders.map((leader, index) => {
+              const isTop3 = index < 3;
+              const rankBadge = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : null;
+
+              return (
+                <div
+                  key={leader.id}
+                  className={`grid grid-cols-12 gap-2 px-4 py-3.5 items-center transition-colors hover:bg-zinc-800/50 ${
+                    index < leaders.length - 1 ? "border-b border-zinc-800/50" : ""
+                  } ${isTop3 ? "bg-zinc-800/30" : ""}`}
+                >
+                  {/* Rank */}
+                  <div className="col-span-1">
+                    {rankBadge ? (
+                      <span className="text-lg">{rankBadge}</span>
+                    ) : (
+                      <span className="text-sm font-medium text-zinc-500">{index + 1}</span>
+                    )}
+                  </div>
+
+                  {/* Username */}
+                  <div className="col-span-5 flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
+                      index === 0 ? "bg-yellow-500/20 text-yellow-400 ring-2 ring-yellow-500/30" :
+                      index === 1 ? "bg-zinc-300/10 text-zinc-300 ring-2 ring-zinc-300/20" :
+                      index === 2 ? "bg-orange-500/20 text-orange-400 ring-2 ring-orange-500/30" :
+                      "bg-zinc-800 text-zinc-400"
+                    }`}>
+                      {(leader.name || leader.email?.split("@")[0] || "?").charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className={`text-sm font-semibold truncate ${isTop3 ? "text-white" : "text-zinc-300"}`}>
+                        {leader.name || leader.email?.split("@")[0]}
+                      </p>
+                      {isTop3 && (
+                        <p className="text-[10px] text-zinc-500 truncate">{leader.email}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* CEX */}
+                  <div className="col-span-3 text-right">
+                    <span className={`font-bold ${isTop3 ? "text-amber-400" : "text-zinc-300"}`}>
+                      {leader.cexBalance.toLocaleString()}
+                    </span>
+                    <span className="text-zinc-600 text-xs ml-1">$X365</span>
+                  </div>
+
+                  {/* Team */}
+                  <div className="col-span-3 text-right">
+                    <span className={`font-medium ${isTop3 ? "text-blue-400" : "text-zinc-400"}`}>
+                      {leader.totalTeam.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 }

@@ -1,10 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { supabaseAdminAdmin } from "@/lib/supabaseAdmin/server";
 
 export async function POST(req: Request) {
   try {
@@ -14,7 +9,7 @@ export async function POST(req: Request) {
     }
 
     if (full) {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from("users")
         .select("id, left_child_id, right_child_id")
         .eq("referral_code", code.trim())
@@ -27,7 +22,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ valid: true, sponsor: data });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("users")
       .select("id, name")
       .eq("referral_code", code.trim())

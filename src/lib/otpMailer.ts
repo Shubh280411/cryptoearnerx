@@ -37,77 +37,70 @@ export async function sendOTPEmail(email: string, otp: string, purpose: string =
   const content = getOTPContent(purpose);
 
   try {
+    const purposeText = purpose === "withdrawal" ? "Withdrawal Verification" : "Email Verification";
+
     await transporter.sendMail({
       from: `"CryptoEarnerX" <${process.env.SMTP_USER}>`,
+      replyTo: `"CryptoEarnerX Support" <${process.env.SMTP_USER}>`,
       to: email,
-      subject: `${content.title} — CryptoEarnerX`,
+      subject: `[CryptoEarnerX] Your ${purposeText} Code: ${otp}`,
+      headers: {
+        "X-Mailer": "CryptoEarnerX",
+        "X-Priority": "1",
+        "X-MSMail-Priority": "High",
+        "Precedence": "bulk",
+        "List-Unsubscribe": `<${SITE_URL}/settings>`,
+      },
+      text: `CryptoEarnerX - ${content.title}\n\nYour verification code: ${otp}\n\nThis code expires in 10 minutes.\n\n${content.warning}\n\nIf you did not request this, please ignore this email.\n\nCryptoEarnerX Team\n${SITE_URL}`,
       html: `
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;background-color:#09090b;font-family:'Segoe UI',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#09090b;padding:40px 20px;">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background-color:#0a0a0a;font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a0a;padding:32px 16px;">
     <tr><td align="center">
-      <table width="480" cellpadding="0" cellspacing="0" style="background-color:#18181b;border-radius:16px;border:1px solid #27272a;overflow:hidden;">
+      <table width="460" cellpadding="0" cellspacing="0" style="background-color:#111111;border-radius:12px;border:1px solid #1e1e1e;overflow:hidden;">
         
-        <!-- Header with Logo -->
-        <tr><td style="background:${content.headerBg};padding:32px 40px;text-align:center;">
-          <img src="${SITE_URL}/logo.png" width="56" height="56" alt="CryptoEarnerX" style="border-radius:12px;margin-bottom:12px;" />
-          <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:-0.5px;">CryptoEarnerX</h1>
-          <p style="margin:6px 0 0;color:#fde68a;font-size:13px;">Earn Crypto. Build Teams. Grow Wealth.</p>
+        <tr><td style="background:${content.headerBg};padding:28px 32px;text-align:center;">
+          <h1 style="margin:0;color:#ffffff;font-size:20px;font-weight:700;">CryptoEarnerX</h1>
+          <p style="margin:4px 0 0;color:#fde68a;font-size:12px;">Account Security</p>
         </td></tr>
         
-        <!-- OTP Section -->
-        <tr><td style="padding:40px 40px 24px;">
-          <h2 style="margin:0 0 8px;color:#ffffff;font-size:20px;font-weight:600;">${content.title}</h2>
-          <p style="margin:0 0 24px;color:#a1a1aa;font-size:14px;line-height:1.5;">
+        <tr><td style="padding:32px 32px 20px;">
+          <p style="margin:0 0 6px;color:#ffffff;font-size:18px;font-weight:600;">${content.title}</p>
+          <p style="margin:0 0 24px;color:#a1a1aa;font-size:14px;line-height:1.6;">
             ${content.subtitle}
           </p>
           
-          <!-- OTP Box -->
           <table width="100%" cellpadding="0" cellspacing="0">
-            <tr><td style="background-color:#09090b;border:1px solid #27272a;border-radius:12px;padding:24px;text-align:center;">
-              <p style="margin:0 0 8px;color:#71717a;font-size:12px;text-transform:uppercase;letter-spacing:2px;">Your Verification Code</p>
-              <p style="margin:0;font-size:40px;font-weight:800;letter-spacing:10px;color:${content.accent};font-family:'Courier New',monospace;">${otp}</p>
+            <tr><td style="background-color:#0a0a0a;border:1px solid #27272a;border-radius:10px;padding:20px 16px;text-align:center;">
+              <p style="margin:0 0 6px;color:#71717a;font-size:11px;text-transform:uppercase;letter-spacing:2px;">Your Verification Code</p>
+              <p style="margin:0;font-size:36px;font-weight:800;letter-spacing:12px;color:${content.accent};font-family:'Courier New',Courier,monospace;">${otp}</p>
             </td></tr>
           </table>
           
-          <p style="margin:20px 0 0;color:#71717a;font-size:13px;text-align:center;">
-            This code expires in <strong style="color:#a1a1aa;">10 minutes</strong>
+          <p style="margin:16px 0 0;color:#71717a;font-size:13px;text-align:center;">
+            Code expires in <strong style="color:#a1a1aa;">10 minutes</strong>. Do not share this code with anyone.
           </p>
         </td></tr>
         
-        <!-- Info Box -->
-        <tr><td style="padding:0 40px 24px;">
+        <tr><td style="padding:0 32px 20px;">
           <table width="100%" cellpadding="0" cellspacing="0">
-            <tr><td style="background-color:#1e293b;border:1px solid #334155;border-radius:8px;padding:16px;">
-              <p style="margin:0;color:#94a3b8;font-size:13px;line-height:1.5;">
-                <strong style="color:#cbd5e1;">Warning:</strong> ${content.warning}
+            <tr><td style="background-color:#1a1a1a;border:1px solid #27272a;border-radius:8px;padding:14px;">
+              <p style="margin:0;color:#a1a1aa;font-size:13px;line-height:1.5;">
+                ${content.warning}
               </p>
             </td></tr>
           </table>
         </td></tr>
         
-        <!-- Divider -->
-        <tr><td style="padding:0 40px;">
-          <div style="border-top:1px solid #27272a;"></div>
-        </td></tr>
+        <tr><td style="padding:0 32px;"><div style="border-top:1px solid #1e1e1e;"></div></td></tr>
         
-        <!-- Footer -->
-        <tr><td style="padding:24px 40px 32px;text-align:center;">
-          <p style="margin:0 0 12px;color:#52525b;font-size:12px;">
-            This is an automated email from CryptoEarnerX. Do not reply.
+        <tr><td style="padding:20px 32px 28px;text-align:center;">
+          <p style="margin:0 0 8px;color:#52525b;font-size:11px;">
+            This is an automated security email from CryptoEarnerX. Do not reply.
           </p>
-          <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
-            <tr>
-              <td style="padding:0 8px;"><a href="${SITE_URL}" style="color:#3b82f6;font-size:12px;text-decoration:none;">Website</a></td>
-              <td style="color:#334155;font-size:12px;">|</td>
-              <td style="padding:0 8px;"><a href="${SITE_URL}/terms" style="color:#3b82f6;font-size:12px;text-decoration:none;">Terms</a></td>
-              <td style="color:#334155;font-size:12px;">|</td>
-              <td style="padding:0 8px;"><a href="${SITE_URL}/privacy" style="color:#3b82f6;font-size:12px;text-decoration:none;">Privacy</a></td>
-            </tr>
-          </table>
-          <p style="margin:16px 0 0;color:#3f3f46;font-size:11px;">&copy; 2026 CryptoEarnerX. All rights reserved.</p>
+          <p style="margin:0;color:#3f3f46;font-size:11px;">&copy; 2026 CryptoEarnerX &mdash; ${SITE_URL}</p>
         </td></tr>
         
       </table>

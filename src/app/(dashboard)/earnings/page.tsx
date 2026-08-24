@@ -32,8 +32,8 @@ export default function EarningsPage() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
-    const txs = data || [];
-    const earnings = txs.filter((t) => t.amount > 0);
+    const txs: any[] = data || [];
+    const earnings = txs.filter((t: any) => t.amount > 0);
 
     setStats({
       total: earnings.filter((t) => !isCECTx(t.type)).reduce((s, t) => s + t.amount, 0),

@@ -201,7 +201,7 @@ export default function WithdrawAirdropPage() {
       </div>
 
       {/* ===== SPARK HERO CARD with Animated Coin ===== */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-purple-600/20 via-pink-600/10 to-amber-600/20 border border-purple-500/20 rounded-2xl p-6 min-h-[260px]">
+      <div className="relative overflow-hidden bg-gradient-to-br from-purple-600/20 via-pink-600/10 to-amber-600/20 border border-purple-500/20 rounded-2xl p-6 min-h-[300px]">
 
         {/* Background Particles */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -228,10 +228,10 @@ export default function WithdrawAirdropPage() {
                 <div className="spark-coin-ring" />
                 <div className="spark-coin">
                   <div className="spark-coin-face spark-coin-front">
-                    <img src="/spark-logo-64.png" alt="SPARK" className="w-[42px] h-[42px] object-contain rounded-full" />
+                    <img src="/spark-logo-64.png" alt="SPARK" className="w-[70px] h-[70px] object-contain rounded-full" />
                   </div>
                   <div className="spark-coin-face spark-coin-back">
-                    <img src="/spark-logo-64.png" alt="SPARK" className="w-[42px] h-[42px] object-contain rounded-full" />
+                    <img src="/spark-logo-64.png" alt="SPARK" className="w-[70px] h-[70px] object-contain rounded-full" />
                   </div>
                 </div>
                 <div className="spark-coin-status" />
@@ -523,8 +523,8 @@ export default function WithdrawAirdropPage() {
         /* === SPARK Coin Animation === */
         .spark-coin-wrapper {
           position: relative;
-          width: 64px;
-          height: 64px;
+          width: 100px;
+          height: 100px;
           perspective: 400px;
         }
         .spark-coin-glow {
@@ -543,8 +543,8 @@ export default function WithdrawAirdropPage() {
         }
         .spark-coin {
           position: relative;
-          width: 64px;
-          height: 64px;
+          width: 100px;
+          height: 100px;
           transform-style: preserve-3d;
           animation: coinSpin 4s ease-in-out infinite;
         }

@@ -110,8 +110,7 @@ export default function LeaderboardPage() {
         ) : (
           <div>
             {leaders.map((leader, index) => {
-              const isTop3 = index < 3;
-              const rankBadge = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : null;
+                  const isTop3 = index < 3;
 
               return (
                 <div
@@ -122,8 +121,21 @@ export default function LeaderboardPage() {
                 >
                   {/* Rank */}
                   <div className="col-span-1">
-                    {rankBadge ? (
-                      <span className="text-lg">{rankBadge}</span>
+                    {index === 0 ? (
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="11" stroke="#facc15" strokeWidth="2" fill="#facc15" fillOpacity="0.15" />
+                        <text x="12" y="16" textAnchor="middle" fill="#facc15" fontSize="12" fontWeight="bold">1</text>
+                      </svg>
+                    ) : index === 1 ? (
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="11" stroke="#d4d4d8" strokeWidth="2" fill="#d4d4d8" fillOpacity="0.15" />
+                        <text x="12" y="16" textAnchor="middle" fill="#d4d4d8" fontSize="12" fontWeight="bold">2</text>
+                      </svg>
+                    ) : index === 2 ? (
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="11" stroke="#fb923c" strokeWidth="2" fill="#fb923c" fillOpacity="0.15" />
+                        <text x="12" y="16" textAnchor="middle" fill="#fb923c" fontSize="12" fontWeight="bold">3</text>
+                      </svg>
                     ) : (
                       <span className="text-sm font-medium text-zinc-500">{index + 1}</span>
                     )}

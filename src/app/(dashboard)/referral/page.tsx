@@ -167,6 +167,7 @@ export default function ReferralPage() {
                       <p className="text-sm text-white">{ref.name || ref.email}</p>
                       <p className="text-xs text-zinc-500">{ref.email}</p>
                       <p className="text-xs text-zinc-500">Joined {new Date(ref.created_at).toLocaleDateString()}</p>
+                      <p className="text-xs text-blue-400 mt-0.5">Team Size: {ref.team_size || 0}</p>
                     </div>
                   </div>
                   <span className="px-2 py-1 bg-zinc-800 rounded text-xs text-zinc-400 capitalize">{ref.rank}</span>

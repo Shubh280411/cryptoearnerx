@@ -2,6 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { requireAuth, handleApiError } from "@/lib/api/auth";
 
+async function getTeamSizeRecursive(userId: string): Promise<number> {
+  const { data: direct } = await supabaseAdmin
+    .from("users")
+    .select("id")
+    .eq("sponsor_id", userId);
+
+  if (!direct || direct.length === 0) return 0;
+
+  let count = direct.length;
+  for (const member of direct) {
+    count += await getTeamSizeRecursive(member.id);
+  }
+  return count;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { user } = await requireAuth();
@@ -22,7 +37,15 @@ export async function POST(req: NextRequest) {
         .in("sponsor_id", currentIds);
 
       const memberList = members || [];
-      teamCounts[level] = { members: memberList, count: memberList.length };
+
+      const membersWithTeamSize = await Promise.all(
+        memberList.map(async (m) => {
+          const teamSize = await getTeamSizeRecursive(m.id);
+          return { ...m, team_size: teamSize };
+        })
+      );
+
+      teamCounts[level] = { members: membersWithTeamSize, count: memberList.length };
       currentIds = memberList.map((u) => u.id);
 
       if (currentIds.length === 0) {

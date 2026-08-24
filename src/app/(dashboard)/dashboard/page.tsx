@@ -93,15 +93,17 @@ export default function DashboardPage() {
       return sum + (inv.amount * inv.daily_roi / 100);
     }, 0);
 
-    // Team size: count all users recursively (simplified: just direct for now)
-    let teamSize = team.length;
-    if (team.length > 0) {
-      const { count } = await supabase
-        .from("users")
-        .select("id", { count: "exact", head: true })
-        .eq("sponsor_id", user.id);
-      teamSize = count || team.length;
+    // Team size: count all users recursively
+    let teamSize = 0;
+    async function countTeam(sponsorId: string) {
+      const { data: children } = await supabase.from("users").select("id").eq("sponsor_id", sponsorId);
+      if (!children || children.length === 0) return;
+      teamSize += children.length;
+      for (const child of children) {
+        await countTeam(child.id);
+      }
     }
+    await countTeam(user.id);
 
     // Earning chart: last 7 days
     const chartMap: Record<string, number> = {};

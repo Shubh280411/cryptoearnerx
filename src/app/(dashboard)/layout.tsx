@@ -36,6 +36,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userName, setUserName] = useState("U");
+  const [toolsOpen, setToolsOpen] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -96,8 +97,15 @@ export default function DashboardLayout({
 
           <div className="pt-4 mt-4 border-t border-zinc-800">
             <button
+              onClick={() => { setToolsOpen(true); setSidebarOpen(false); }}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-800 w-full transition-colors"
+            >
+              <Icon name="settings" size={18} />
+              Tools
+            </button>
+            <button
               onClick={handleLogout}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-zinc-400 hover:text-red-400 hover:bg-zinc-800 w-full transition-colors"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-zinc-400 hover:text-red-400 hover:bg-zinc-800 w-full transition-colors mt-1"
             >
               <Icon name="logout" size={18} />
               Logout
@@ -134,6 +142,70 @@ export default function DashboardLayout({
           {children}
         </main>
       </div>
+
+      {/* Tools Modal */}
+      {toolsOpen && (
+        <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4" onClick={() => setToolsOpen(false)}>
+          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-md p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white">Tools</h2>
+              <button onClick={() => setToolsOpen(false)} className="text-zinc-400 hover:text-white p-1">
+                <Icon name="x" size={20} />
+              </button>
+            </div>
+
+            {/* Presentation PDF */}
+            <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-600/10 flex items-center justify-center shrink-0">
+                  <Icon name="fileText" size={20} className="text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-white font-semibold text-sm">Presentation PDF</p>
+                  <p className="text-zinc-500 text-xs">Company overview & roadmap</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <a href="/presentation.pdf" target="_blank" rel="noopener noreferrer"
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors">
+                  <Icon name="eye" size={16} />
+                  View
+                </a>
+                <a href="/presentation.pdf" download="CryptoEarnerX-Presentation.pdf"
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-medium transition-colors">
+                  <Icon name="download" size={16} />
+                  Download
+                </a>
+              </div>
+            </div>
+
+            {/* Whitepaper PDF */}
+            <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-purple-600/10 flex items-center justify-center shrink-0">
+                  <Icon name="fileText" size={20} className="text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-white font-semibold text-sm">Whitepaper PDF</p>
+                  <p className="text-zinc-500 text-xs">Technical documentation</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <a href="/whitepaper.pdf" target="_blank" rel="noopener noreferrer"
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition-colors">
+                  <Icon name="eye" size={16} />
+                  View
+                </a>
+                <a href="/whitepaper.pdf" download="CryptoEarnerX-Whitepaper.pdf"
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-medium transition-colors">
+                  <Icon name="download" size={16} />
+                  Download
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

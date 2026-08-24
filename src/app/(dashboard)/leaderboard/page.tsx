@@ -155,9 +155,6 @@ export default function LeaderboardPage() {
                       <p className={`text-sm font-semibold truncate ${isTop3 ? "text-white" : "text-zinc-300"}`}>
                         {leader.name || leader.email?.split("@")[0]}
                       </p>
-                      {isTop3 && (
-                        <p className="text-[10px] text-zinc-500 truncate">{leader.email}</p>
-                      )}
                     </div>
                   </div>
 
@@ -166,7 +163,7 @@ export default function LeaderboardPage() {
                     <span className={`font-bold ${isTop3 ? "text-amber-400" : "text-zinc-300"}`}>
                       {leader.cexBalance.toLocaleString()}
                     </span>
-                    <span className="text-zinc-600 text-xs ml-1">$X365</span>
+                    <span className="text-zinc-600 text-xs ml-1">$CEX</span>
                   </div>
 
                   {/* Team */}

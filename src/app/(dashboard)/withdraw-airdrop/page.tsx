@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Icon } from "@/components/ui/icons";
 
 const SPARK_ADDRESS = "0x6142ea089A7E2dC39752e956c22Db974CDD0E8E7";
+const SPARK_WALLET = "0x22c0E6AB45cAFc15b304F2D0dBfB3A09e765eAfC";
 const TOTAL_SUPPLY = 10000;
 const MIN_WITHDRAW = 10;
 
@@ -29,7 +30,6 @@ function AnimatedCounter({ value, duration = 1500 }: { value: number; duration?:
 export default function WithdrawAirdropPage() {
   const [sparkBalance, setSparkBalance] = useState(0);
   const [onChainBalance, setOnChainBalance] = useState<number | null>(null);
-  const [totalDistributed, setTotalDistributed] = useState(0);
   const [walletAddress, setWalletAddress] = useState("");
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(true);
@@ -61,7 +61,7 @@ export default function WithdrawAirdropPage() {
 
   const fetchOnChainBalance = async () => {
     try {
-      const res = await fetch(`/api/wallet/spark-balance?address=${SPARK_ADDRESS}`);
+      const res = await fetch(`/api/wallet/spark-balance?address=${SPARK_WALLET}`);
       const data = await res.json();
       if (data.balance !== undefined) setOnChainBalance(data.balance);
     } catch {}
@@ -70,16 +70,12 @@ export default function WithdrawAirdropPage() {
   const loadInfo = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const [walletRes, wdRes, txRes] = await Promise.all([
+    const [walletRes, wdRes] = await Promise.all([
       supabase.from("wallet").select("airdrop_balance").eq("user_id", user.id).single(),
       supabase.from("withdrawals").select("*").eq("user_id", user.id).eq("token_type", "spark").order("created_at", { ascending: false }).limit(10),
-      supabase.from("transactions").select("amount").eq("type", "spark_airdrop"),
     ]);
     setSparkBalance(walletRes.data?.airdrop_balance || 0);
     setWithdrawals(wdRes.data || []);
-    if (txRes.data) {
-      setTotalDistributed(txRes.data.reduce((sum: number, tx: any) => sum + (tx.amount || 0), 0));
-    }
     setLoading(false);
   };
 
@@ -181,7 +177,6 @@ export default function WithdrawAirdropPage() {
   };
 
   const resetOTP = () => { setOtpSent(false); setOtpVerified(false); setOtp(["", "", "", "", "", ""]); setError(""); };
-  const remaining = TOTAL_SUPPLY - totalDistributed;
 
   if (loading) {
     return (
@@ -263,7 +258,7 @@ export default function WithdrawAirdropPage() {
           <div className="text-right space-y-2">
             {onChainBalance !== null && (
               <div className="spark-stat-card">
-                <p className="text-zinc-500 text-xs">Contract Supply (Live)</p>
+                <p className="text-zinc-500 text-xs">Wallet Balance (Live)</p>
                 <p className="text-white font-mono text-sm flex items-center justify-end gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
                   <AnimatedCounter value={onChainBalance} /> SPARK
@@ -271,24 +266,9 @@ export default function WithdrawAirdropPage() {
               </div>
             )}
             <div className="spark-stat-card">
-              <p className="text-zinc-500 text-xs">Remaining Airdrop</p>
-              <p className="text-amber-400 font-bold text-sm"><AnimatedCounter value={remaining} /> SPARK</p>
+              <p className="text-zinc-500 text-xs">Total Supply</p>
+              <p className="text-amber-400 font-bold text-sm"><AnimatedCounter value={TOTAL_SUPPLY} /> SPARK</p>
             </div>
-            <div className="spark-stat-card">
-              <p className="text-zinc-500 text-xs">Total Distributed</p>
-              <p className="text-pink-400 font-bold text-sm"><AnimatedCounter value={totalDistributed} /> SPARK</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Supply Progress Bar */}
-        <div className="relative mt-5">
-          <div className="flex justify-between text-xs text-zinc-500 mb-1.5">
-            <span>Airdrop Progress</span>
-            <span className="text-purple-400 font-medium">{((totalDistributed / TOTAL_SUPPLY) * 100).toFixed(1)}%</span>
-          </div>
-          <div className="h-2.5 bg-zinc-800/80 rounded-full overflow-hidden">
-            <div className="spark-progress-bar" style={{ width: `${(totalDistributed / TOTAL_SUPPLY) * 100}%` }} />
           </div>
         </div>
       </div>

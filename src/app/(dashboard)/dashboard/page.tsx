@@ -319,52 +319,84 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {/* Active Investments */}
+      {/* Active Investments — Detailed Progress Cards */}
       {activeInvestments.length > 0 && (
-        <Card title="Active Investments">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {activeInvestments.map((inv) => {
               const progress = getInvestmentProgress(inv);
               const daysLeft = getDaysLeft(inv);
               const pkgColor = getPackageColor(inv.package_type);
-              const pkgName = PACKAGES.find((p) => p.type === inv.package_type)?.name || inv.package_type;
+              const pkg = PACKAGES.find((p) => p.type === inv.package_type);
+              const pkgName = pkg?.name || inv.package_type;
               const dailyEarning = inv.amount * inv.daily_roi / 100;
+              const start = new Date(inv.start_date).getTime();
+              const now = Date.now();
+              const dayNum = Math.min(Math.floor((now - start) / (1000 * 60 * 60 * 24)) + 1, inv.duration_days || pkg?.durationDays || 30);
+              const totalDays = inv.duration_days || pkg?.durationDays || 30;
+              const totalEarned = dayNum * dailyEarning;
 
               return (
-                <div key={inv.id} className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700/50">
-                  <div className="flex items-center justify-between mb-3">
-                    <span
-                      className="text-xs font-semibold px-2 py-1 rounded-full"
-                      style={{ backgroundColor: `${pkgColor}20`, color: pkgColor }}
-                    >
-                      {pkgName}
-                    </span>
-                    <span className="text-xs text-zinc-400">{daysLeft}d left</span>
-                  </div>
-                  <p className="text-white font-bold">{formatPOL(inv.amount)} POL</p>
-                  <p className="text-green-400 text-xs mt-1">+{formatPOL(dailyEarning)} POL/day</p>
-                  <div className="mt-3">
-                    <div className="flex justify-between text-xs text-zinc-500 mb-1">
-                      <span>Progress</span>
-                      <span>{progress}%</span>
+                <Card key={inv.id}>
+                  <div className="space-y-4">
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold px-3 py-1 rounded-full" style={{ backgroundColor: `${pkgColor}20`, color: pkgColor }}>
+                        {pkgName}
+                      </span>
+                      <span className="text-xs text-zinc-400">{daysLeft}d left</span>
                     </div>
-                    <div className="h-1.5 bg-zinc-700 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all"
-                        style={{ width: `${progress}%`, backgroundColor: pkgColor }}
-                      />
+
+                    {/* Amount */}
+                    <div>
+                      <p className="text-2xl font-extrabold text-white">{formatPOL(inv.amount)} <span className="text-sm font-bold text-zinc-400">POL</span></p>
+                    </div>
+
+                    {/* Day Counter */}
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-zinc-400">Day {dayNum} / {totalDays}</span>
+                      <span className="text-green-400 font-bold">+{formatPOL(dailyEarning)} POL/day</span>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div>
+                      <div className="flex justify-between text-xs text-zinc-500 mb-1.5">
+                        <span>Progress</span>
+                        <span className="text-zinc-300 font-medium">{progress}%</span>
+                      </div>
+                      <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${progress}%`, background: `linear-gradient(90deg, ${pkgColor}80, ${pkgColor})` }} />
+                      </div>
+                    </div>
+
+                    {/* Stats Row */}
+                    <div className="flex items-center justify-between pt-2 border-t border-zinc-800">
+                      <div>
+                        <p className="text-[10px] text-zinc-500 uppercase tracking-wide">Today&apos;s ROI</p>
+                        <p className="text-sm font-bold text-green-400">{formatPOL(dailyEarning)} POL</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] text-zinc-500 uppercase tracking-wide">Total Earned</p>
+                        <p className="text-sm font-bold text-white">{formatPOL(totalEarned)} POL</p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </Card>
               );
             })}
           </div>
-          {data.activePackages > 4 && (
-            <Link href="/invest" className="block text-center text-sm text-blue-400 hover:text-blue-300 mt-3">
+
+          {data.activePackages > 3 && (
+            <Link href="/invest" className="block text-center text-sm text-blue-400 hover:text-blue-300">
               View all {data.activePackages} packages
             </Link>
           )}
-        </Card>
+        </div>
+      )}
+
+      {/* Next ROI Countdown Card */}
+      {activeInvestments.length > 0 && (
+        <NextROICard investments={activeInvestments} />
       )}
 
       {/* Team Summary + Referral Box */}
@@ -509,5 +541,127 @@ export default function DashboardPage() {
       )}
 
     </div>
+  );
+}
+
+function NextROICard({ investments }: { investments: any[] }) {
+  const [countdown, setCountdown] = useState({ h: 0, m: 0, s: 0 });
+  const [nextROI, setNextROI] = useState(0);
+
+  useEffect(() => {
+    const calcNextROI = () => {
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+      tomorrow.setUTCHours(0, 0, 0, 0);
+      const diff = tomorrow.getTime() - now.getTime();
+      const h = Math.floor(diff / (1000 * 60 * 60));
+      const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const s = Math.floor((diff % (1000 * 60)) / 1000);
+      setCountdown({ h, m, s });
+
+      const totalDaily = investments.reduce((sum, inv) => sum + (inv.amount * inv.daily_roi / 100), 0);
+      setNextROI(totalDaily);
+    };
+
+    calcNextROI();
+    const timer = setInterval(calcNextROI, 1000);
+    return () => clearInterval(timer);
+  }, [investments]);
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  return (
+    <Card>
+      <div className="flex flex-col sm:flex-row items-center gap-6">
+        {/* Animated Analog Clock */}
+        <div className="relative shrink-0">
+          <svg width="100" height="100" viewBox="0 0 100 100" className="drop-shadow-lg">
+            {/* Clock face */}
+            <circle cx="50" cy="50" r="46" fill="#111111" stroke="#27272a" strokeWidth="2" />
+
+            {/* Hour markers */}
+            {Array.from({ length: 12 }).map((_, i) => {
+              const angle = (i * 30 - 90) * (Math.PI / 180);
+              const x1 = 50 + 38 * Math.cos(angle);
+              const y1 = 50 + 38 * Math.sin(angle);
+              const x2 = 50 + 42 * Math.cos(angle);
+              const y2 = 50 + 42 * Math.sin(angle);
+              return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#52525b" strokeWidth="2" strokeLinecap="round" />;
+            })}
+
+            {/* Minute tick marks */}
+            {Array.from({ length: 60 }).map((_, i) => {
+              if (i % 5 === 0) return null;
+              const angle = (i * 6 - 90) * (Math.PI / 180);
+              const x1 = 50 + 40 * Math.cos(angle);
+              const y1 = 50 + 40 * Math.sin(angle);
+              const x2 = 50 + 42 * Math.cos(angle);
+              const y2 = 50 + 42 * Math.sin(angle);
+              return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#3f3f46" strokeWidth="0.8" strokeLinecap="round" />;
+            })}
+
+            {/* Hour hand */}
+            <line
+              x1="50" y1="50"
+              x2={50 + 22 * Math.cos(((countdown.h % 12) * 30 + countdown.m * 0.5 - 90) * Math.PI / 180)}
+              y2={50 + 22 * Math.sin(((countdown.h % 12) * 30 + countdown.m * 0.5 - 90) * Math.PI / 180)}
+              stroke="#e4e4e7"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+
+            {/* Minute hand */}
+            <line
+              x1="50" y1="50"
+              x2={50 + 30 * Math.cos((countdown.m * 6 + countdown.s * 0.1 - 90) * Math.PI / 180)}
+              y2={50 + 30 * Math.sin((countdown.m * 6 + countdown.s * 0.1 - 90) * Math.PI / 180)}
+              stroke="#a1a1aa"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+
+            {/* Second hand */}
+            <line
+              x1="50" y1="50"
+              x2={50 + 32 * Math.cos((countdown.s * 6 - 90) * Math.PI / 180)}
+              y2={50 + 32 * Math.sin((countdown.s * 6 - 90) * Math.PI / 180)}
+              stroke="#22c55e"
+              strokeWidth="1"
+              strokeLinecap="round"
+            />
+
+            {/* Center dot */}
+            <circle cx="50" cy="50" r="3" fill="#22c55e" />
+          </svg>
+        </div>
+
+        {/* ROI Info */}
+        <div className="flex-1 text-center sm:text-left">
+          <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold mb-2">Next ROI Credit</p>
+          <p className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400">
+            {formatPOL(nextROI)} <span className="text-lg font-bold">POL</span>
+          </p>
+          <p className="text-xs text-zinc-500 mt-1">Credited daily at 12:00 AM UTC</p>
+
+          {/* Countdown Timer */}
+          <div className="flex items-center justify-center sm:justify-start gap-2 mt-4">
+            {[
+              { label: "HRS", value: countdown.h },
+              { label: "MIN", value: countdown.m },
+              { label: "SEC", value: countdown.s },
+            ].map((unit, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <div className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-center min-w-[52px]">
+                  <p className="text-xl font-bold text-white font-mono">{pad(unit.value)}</p>
+                  <p className="text-[8px] text-zinc-500 uppercase tracking-wider">{unit.label}</p>
+                </div>
+                {i < 2 && <span className="text-zinc-600 text-lg font-bold animate-pulse">:</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Card>
   );
 }

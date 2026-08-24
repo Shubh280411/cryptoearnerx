@@ -268,7 +268,7 @@ export default function DashboardPage() {
       )}
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Link href="/deposit">
           <Card className="hover:border-blue-600/50 transition-colors cursor-pointer text-center py-4">
             <Icon name="download" size={24} className="text-blue-400 mx-auto mb-2" />
@@ -287,16 +287,10 @@ export default function DashboardPage() {
             <p className="text-sm font-medium text-white">Withdraw</p>
           </Card>
         </Link>
-        <Link href="/transactions">
+        <Link href="/earnings">
           <Card className="hover:border-purple-600/50 transition-colors cursor-pointer text-center py-4">
-            <Icon name="clock" size={24} className="text-purple-400 mx-auto mb-2" />
-            <p className="text-sm font-medium text-white">Transactions</p>
-          </Card>
-        </Link>
-        <Link href="/referral">
-          <Card className="hover:border-cyan-600/50 transition-colors cursor-pointer text-center py-4">
-            <Icon name="link" size={24} className="text-cyan-400 mx-auto mb-2" />
-            <p className="text-sm font-medium text-white">Refer</p>
+            <Icon name="trending" size={24} className="text-purple-400 mx-auto mb-2" />
+            <p className="text-sm font-medium text-white">Earnings</p>
           </Card>
         </Link>
       </div>

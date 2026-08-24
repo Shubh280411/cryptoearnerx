@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icons";
 
-const TARGET_MEMBERS = 10000;
+const TARGET_MEMBERS = 5000;
 const CEX_RATE = 20;
 
 export default function ConvertPage() {

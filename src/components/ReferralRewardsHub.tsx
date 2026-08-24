@@ -38,6 +38,8 @@ export function ReferralRewardsHub() {
 
     let currentIds = [user.id];
 
+    const cexLevelBonus: Record<number, number> = { 1: 50, 2: 40, 3: 30, 4: 20, 5: 10 };
+
     for (let level = 1; level <= 5; level++) {
       const { data: nextUsers } = await supabase
         .from("users")
@@ -47,32 +49,7 @@ export function ReferralRewardsHub() {
       const nextIds = (nextUsers || []).map((u) => u.id);
       const teamCount = nextIds.length;
 
-      let cexEarned = 0;
-      if (nextIds.length > 0) {
-        const { data: txs } = await supabase
-          .from("transactions")
-          .select("amount")
-          .eq("user_id", user.id)
-          .eq("type", "registration_bonus")
-          .eq("status", "completed");
-
-        if (txs) {
-          const levelBonus: Record<number, number> = { 1: 50, 2: 40, 3: 30, 4: 20, 5: 10 };
-          const bonusPerMember = levelBonus[level] || 0;
-          const l1Count = tierResults[0]?.teamMembers || (level === 1 ? teamCount : 0);
-          cexEarned = level === 1 ? l1Count * bonusPerMember : 0;
-        }
-
-        if (level === 1) {
-          const { data: l1Txs } = await supabase
-            .from("transactions")
-            .select("amount")
-            .eq("user_id", user.id)
-            .eq("type", "registration_bonus")
-            .eq("status", "completed");
-          cexEarned = (l1Txs || []).reduce((sum, tx) => sum + (tx.amount || 0), 0);
-        }
-      }
+      const cexEarned = teamCount * (cexLevelBonus[level] || 0);
 
       tierResults.push({
         ...TIERS[level - 1],

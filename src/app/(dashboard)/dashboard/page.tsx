@@ -16,8 +16,10 @@ interface DashboardData {
   leftVolume: number;
   rightVolume: number;
   balance: number;
+  earnedBalance: number;
   bonusBalance: number;
   lockedCEX: number;
+  sparkBalance: number;
   totalEarned: number;
   totalInvested: number;
   activePackages: number;
@@ -33,8 +35,10 @@ export default function DashboardPage() {
     leftVolume: 0,
     rightVolume: 0,
     balance: 0,
+    earnedBalance: 0,
     bonusBalance: 0,
     lockedCEX: 0,
+    sparkBalance: 0,
     totalEarned: 0,
     totalInvested: 0,
     activePackages: 0,
@@ -124,9 +128,11 @@ export default function DashboardPage() {
       referralCode: u?.referral_code || "",
       leftVolume: u?.left_volume || 0,
       rightVolume: u?.right_volume || 0,
-      balance: wallet?.balance || 0,
+      balance: wallet?.total_deposited || 0,
+      earnedBalance: wallet?.balance || 0,
       bonusBalance: wallet?.bonus_balance || 0,
       lockedCEX: wallet?.locked_bonus_balance || 0,
+      sparkBalance: wallet?.airdrop_balance || 0,
       totalEarned,
       totalInvested: wallet?.total_invested || 0,
       activePackages: investments.length,
@@ -227,59 +233,47 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-zinc-400 text-sm">Wallet Balance</p>
-              <p className="text-2xl font-bold text-white mt-1">{formatPOL(data.balance)} POL</p>
-            </div>
-            <div className="w-12 h-12 bg-blue-600/10 rounded-xl flex items-center justify-center">
-              <Icon name="wallet" size={24} className="text-blue-400" />
-            </div>
+          <div>
+            <p className="text-zinc-400 text-xs">Deposit Balance</p>
+            <p className="text-lg font-bold text-white mt-1">{formatPOL(data.balance)} POL</p>
           </div>
         </Card>
 
         <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-zinc-400 text-sm flex items-center gap-1.5">
-                CEX Coins
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-              </p>
-              <p className="text-2xl font-bold text-purple-400 mt-1">{(data.bonusBalance + data.lockedCEX).toLocaleString()} CEX</p>
-              <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-                All locked
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-purple-600/10 rounded-xl flex items-center justify-center">
-              <Icon name="coins" size={24} className="text-purple-400" />
-            </div>
+          <div>
+            <p className="text-zinc-400 text-xs">Earned Balance</p>
+            <p className="text-lg font-bold text-green-400 mt-1">{formatPOL(data.earnedBalance)} POL</p>
           </div>
         </Card>
 
         <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-zinc-400 text-sm">Today&apos;s Earning</p>
-              <p className="text-2xl font-bold text-green-400 mt-1">+{formatPOL(data.todayEarning)} POL</p>
-            </div>
-            <div className="w-12 h-12 bg-green-600/10 rounded-xl flex items-center justify-center">
-              <Icon name="trending" size={24} className="text-green-400" />
-            </div>
+          <div>
+            <p className="text-zinc-400 text-xs">Today&apos;s Earning</p>
+            <p className="text-lg font-bold text-green-400 mt-1">+{formatPOL(data.todayEarning)} POL</p>
           </div>
         </Card>
 
         <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-zinc-400 text-sm">Active Packages</p>
-              <p className="text-2xl font-bold text-white mt-1">{data.activePackages}</p>
-            </div>
-            <div className="w-12 h-12 bg-amber-600/10 rounded-xl flex items-center justify-center">
-              <Icon name="package" size={24} className="text-amber-400" />
-            </div>
+          <div>
+            <p className="text-zinc-400 text-xs">SPARK Balance</p>
+            <p className="text-lg font-bold text-purple-400 mt-1">{data.sparkBalance.toLocaleString()} SPARK</p>
+          </div>
+        </Card>
+
+        <Card>
+          <div>
+            <p className="text-zinc-400 text-xs">CEX Coins</p>
+            <p className="text-lg font-bold text-amber-400 mt-1">{(data.bonusBalance + data.lockedCEX).toLocaleString()} CEX</p>
+            <p className="text-[10px] text-zinc-500 mt-0.5">Locked</p>
+          </div>
+        </Card>
+
+        <Card>
+          <div>
+            <p className="text-zinc-400 text-xs">Active Packages</p>
+            <p className="text-lg font-bold text-white mt-1">{data.activePackages}</p>
           </div>
         </Card>
       </div>

@@ -8,7 +8,6 @@ import { Icon } from "@/components/ui/icons";
 import { formatPOL } from "@/lib/utils";
 import { PACKAGES } from "@/lib/constants";
 import { ReferralRewardsHub } from "@/components/ReferralRewardsHub";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 interface DashboardData {
   name: string;
@@ -47,7 +46,6 @@ export default function DashboardPage() {
     todayEarning: 0,
   });
   const [activeInvestments, setActiveInvestments] = useState<any[]>([]);
-  const [earningChart, setEarningChart] = useState<{ day: string; amount: number }[]>([]);
   const [announcement, setAnnouncement] = useState<string>("");
   const [recentJoinees, setRecentJoinees] = useState<{ id: string; name: string; created_at: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,7 +61,6 @@ export default function DashboardPage() {
       investRes,
       teamRes,
       allEarnedRes,
-      roiTxs,
       settingsRes,
       recentJoinRes,
     ] = await Promise.all([
@@ -72,7 +69,6 @@ export default function DashboardPage() {
       supabase.from("investments").select("*").eq("user_id", user.id).eq("status", "active"),
       supabase.from("users").select("id").eq("sponsor_id", user.id),
       supabase.from("transactions").select("amount").eq("user_id", user.id).eq("status", "completed"),
-      supabase.from("transactions").select("amount, created_at").eq("user_id", user.id).eq("type", "roi_payout").order("created_at", { ascending: false }).limit(50),
       supabase.from("settings").select("value").eq("key", "announcement").maybeSingle(),
       supabase.from("users").select("id, name, created_at").order("created_at", { ascending: false }).limit(5),
     ]);
@@ -82,7 +78,6 @@ export default function DashboardPage() {
     const investments = investRes.data || [];
     const team = teamRes.data || [];
     const allEarned = allEarnedRes.data || [];
-    const roiTx = roiTxs.data || [];
 
     const totalEarned = allEarned.filter((t: any) => t.amount > 0).reduce((s: number, t: any) => s + t.amount, 0);
 
@@ -105,26 +100,6 @@ export default function DashboardPage() {
     }
     await countTeam(user.id);
 
-    // Earning chart: last 7 days
-    const chartMap: Record<string, number> = {};
-    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const key = d.toISOString().split("T")[0];
-      chartMap[key] = 0;
-    }
-    roiTx.forEach((tx: any) => {
-      const key = tx.created_at?.split("T")[0];
-      if (key && chartMap[key] !== undefined) {
-        chartMap[key] += tx.amount;
-      }
-    });
-    const chartData = Object.entries(chartMap).map(([date, amount]) => ({
-      day: dayNames[new Date(date).getDay()],
-      amount: Number(amount.toFixed(2)),
-    }));
-
     setData({
       name: u?.name || "User",
       referralCode: u?.referral_code || "",
@@ -144,7 +119,6 @@ export default function DashboardPage() {
     });
 
     setActiveInvestments(investments.slice(0, 4));
-    setEarningChart(chartData);
     setRecentJoinees((recentJoinRes.data || []) as any);
     setAnnouncement(settingsRes.data?.value || "");
     setLoading(false);
@@ -294,7 +268,7 @@ export default function DashboardPage() {
       )}
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <Link href="/deposit">
           <Card className="hover:border-blue-600/50 transition-colors cursor-pointer text-center py-4">
             <Icon name="download" size={24} className="text-blue-400 mx-auto mb-2" />
@@ -313,9 +287,15 @@ export default function DashboardPage() {
             <p className="text-sm font-medium text-white">Withdraw</p>
           </Card>
         </Link>
-        <Link href="/referral">
+        <Link href="/transactions">
           <Card className="hover:border-purple-600/50 transition-colors cursor-pointer text-center py-4">
-            <Icon name="link" size={24} className="text-purple-400 mx-auto mb-2" />
+            <Icon name="clock" size={24} className="text-purple-400 mx-auto mb-2" />
+            <p className="text-sm font-medium text-white">Transactions</p>
+          </Card>
+        </Link>
+        <Link href="/referral">
+          <Card className="hover:border-cyan-600/50 transition-colors cursor-pointer text-center py-4">
+            <Icon name="link" size={24} className="text-cyan-400 mx-auto mb-2" />
             <p className="text-sm font-medium text-white">Refer</p>
           </Card>
         </Link>
@@ -485,45 +465,6 @@ export default function DashboardPage() {
               ))
             )}
           </div>
-        </Card>
-
-        {/* Earning Chart */}
-        <Card title="Earnings (Last 7 Days)">
-          {earningChart.some((d) => d.amount > 0) ? (
-            <div className="h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={earningChart}>
-                  <XAxis
-                    dataKey="day"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: "#71717a", fontSize: 11 }}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: "#71717a", fontSize: 11 }}
-                    width={40}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#18181b",
-                      border: "1px solid #27272a",
-                      borderRadius: "8px",
-                      fontSize: "12px",
-                    }}
-                    labelStyle={{ color: "#a1a1aa" }}
-                    formatter={(value: any) => [`${value} POL`, "Earned"]}
-                  />
-                  <Bar dataKey="amount" fill="#a855f7" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-48 text-zinc-500 text-sm">
-              No earnings data yet
-            </div>
-          )}
         </Card>
       </div>
 

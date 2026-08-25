@@ -155,25 +155,31 @@ export default function LandingPage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
               {/* SPARK */}
-              <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}
-                className="glass-card rounded-2xl p-8 flex items-center gap-6 hover:border-purple-500/30 transition-all">
-                <img src="/spark-logo-sm.png" alt="SPARK" className="w-20 h-20 rounded-full shrink-0" />
-                <div>
-                  <h3 className="text-xl font-bold text-white">SPARK</h3>
-                  <p className="text-purple-400 text-sm font-medium mt-1">Limited Edition Airdrop Token</p>
-                  <p className="text-zinc-500 text-xs mt-2 leading-relaxed">Only 10,000 supply. Earn through signup & referrals. Withdrawable anytime.</p>
-                </div>
-              </motion.div>
+              <Link href="/token/spark">
+                <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}
+                  className="glass-card rounded-2xl p-8 flex items-center gap-6 hover:border-purple-500/30 transition-all cursor-pointer group">
+                  <img src="/spark-logo-sm.png" alt="SPARK" className="w-20 h-20 rounded-full shrink-0 group-hover:scale-110 transition-transform" />
+                  <div>
+                    <h3 className="text-xl font-bold text-white group-hover:text-purple-400 transition-colors">SPARK</h3>
+                    <p className="text-purple-400 text-sm font-medium mt-1">Limited Edition Airdrop Token</p>
+                    <p className="text-zinc-500 text-xs mt-2 leading-relaxed">Only 10,000 supply. Earn through signup & referrals. Withdrawable anytime.</p>
+                  </div>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#52525b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-auto shrink-0 group-hover:stroke-purple-400 transition-colors"><polyline points="9 18 15 12 9 6" /></svg>
+                </motion.div>
+              </Link>
               {/* CEX */}
-              <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}
-                className="glass-card rounded-2xl p-8 flex items-center gap-6 hover:border-blue-500/30 transition-all">
-                <img src="/cex-logo-sm.png" alt="CEX" className="w-20 h-20 rounded-full shrink-0" />
-                <div>
-                  <h3 className="text-xl font-bold text-white">CEX</h3>
-                  <p className="text-blue-400 text-sm font-medium mt-1">Company Reward Token</p>
-                  <p className="text-zinc-500 text-xs mt-2 leading-relaxed">Earn through referrals & activities. CEX to POL conversion at 5,000 members.</p>
-                </div>
-              </motion.div>
+              <Link href="/token/cex">
+                <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}
+                  className="glass-card rounded-2xl p-8 flex items-center gap-6 hover:border-blue-500/30 transition-all cursor-pointer group">
+                  <img src="/cex-logo-sm.png" alt="CEX" className="w-20 h-20 rounded-full shrink-0 group-hover:scale-110 transition-transform" />
+                  <div>
+                    <h3 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors">CEX</h3>
+                    <p className="text-blue-400 text-sm font-medium mt-1">Company Reward Token</p>
+                    <p className="text-zinc-500 text-xs mt-2 leading-relaxed">Earn through referrals & activities. CEX to POL conversion at 5,000 members.</p>
+                  </div>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#52525b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-auto shrink-0 group-hover:stroke-blue-400 transition-colors"><polyline points="9 18 15 12 9 6" /></svg>
+                </motion.div>
+              </Link>
             </div>
           </div>
         </section>

@@ -515,6 +515,16 @@ function NextROICard({ investments }: { investments: any[] }) {
   }, [investments]);
 
   const pad = (n: number) => String(n).padStart(2, "0");
+  const handPoint = (angle: number, length: number) => {
+    const radians = (angle * Math.PI) / 180;
+    return {
+      x: 50 + length * Math.sin(radians),
+      y: 50 - length * Math.cos(radians),
+    };
+  };
+  const hourHand = handPoint((now.getHours() % 12) * 30 + now.getMinutes() * 0.5, 22);
+  const minuteHand = handPoint(now.getMinutes() * 6 + now.getSeconds() * 0.1, 30);
+  const secondHand = handPoint(now.getSeconds() * 6, 32);
 
   return (
     <Card>
@@ -549,34 +559,31 @@ function NextROICard({ investments }: { investments: any[] }) {
             {/* Hour hand */}
             <line
               x1="50" y1="50"
-              x2="50"
-              y2="28"
+              x2={hourHand.x}
+              y2={hourHand.y}
               stroke="#e4e4e7"
               strokeWidth="3"
               strokeLinecap="round"
-              transform={`rotate(${(now.getHours() % 12) * 30 + now.getMinutes() * 0.5} 50 50)`}
             />
 
             {/* Minute hand */}
             <line
               x1="50" y1="50"
-              x2="50"
-              y2="20"
+              x2={minuteHand.x}
+              y2={minuteHand.y}
               stroke="#a1a1aa"
               strokeWidth="2"
               strokeLinecap="round"
-              transform={`rotate(${now.getMinutes() * 6 + now.getSeconds() * 0.1} 50 50)`}
             />
 
             {/* Second hand */}
             <line
               x1="50" y1="50"
-              x2="50"
-              y2="18"
+              x2={secondHand.x}
+              y2={secondHand.y}
               stroke="#22c55e"
               strokeWidth="1"
               strokeLinecap="round"
-              transform={`rotate(${now.getSeconds() * 6} 50 50)`}
             />
 
             {/* Center dot */}

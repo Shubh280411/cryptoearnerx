@@ -112,6 +112,13 @@ export default function LandingPage() {
               Learn More
             </Link>
           </motion.div>
+
+          {/* Hero Illustration */}
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.5 }}
+            className="mt-16 max-w-4xl mx-auto">
+            <img src="/hero-illustration.png" alt="CryptoEarnerX Platform"
+              className="w-full h-auto rounded-2xl drop-shadow-2xl" />
+          </motion.div>
         </div>
       </section>
 
@@ -133,6 +140,40 @@ export default function LandingPage() {
                   <p className="text-zinc-400 mt-2 text-sm">{stat.label}</p>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+      </Section>
+
+      {/* ===== OUR TOKENS ===== */}
+      <Section>
+        <section className="py-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <p className="text-blue-400 text-sm font-semibold uppercase tracking-widest mb-3">Dual Token Economy</p>
+              <h2 className="text-3xl lg:text-4xl font-bold text-white">Our Tokens</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+              {/* SPARK */}
+              <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}
+                className="glass-card rounded-2xl p-8 flex items-center gap-6 hover:border-purple-500/30 transition-all">
+                <img src="/spark-logo-sm.png" alt="SPARK" className="w-20 h-20 rounded-full shrink-0" />
+                <div>
+                  <h3 className="text-xl font-bold text-white">SPARK</h3>
+                  <p className="text-purple-400 text-sm font-medium mt-1">Limited Edition Airdrop Token</p>
+                  <p className="text-zinc-500 text-xs mt-2 leading-relaxed">Only 10,000 supply. Earn through signup & referrals. Withdrawable anytime.</p>
+                </div>
+              </motion.div>
+              {/* CEX */}
+              <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}
+                className="glass-card rounded-2xl p-8 flex items-center gap-6 hover:border-blue-500/30 transition-all">
+                <img src="/cex-logo-sm.png" alt="CEX" className="w-20 h-20 rounded-full shrink-0" />
+                <div>
+                  <h3 className="text-xl font-bold text-white">CEX</h3>
+                  <p className="text-blue-400 text-sm font-medium mt-1">Company Reward Token</p>
+                  <p className="text-zinc-500 text-xs mt-2 leading-relaxed">Earn through referrals & activities. CEX to POL conversion at 5,000 members.</p>
+                </div>
+              </motion.div>
             </div>
           </div>
         </section>

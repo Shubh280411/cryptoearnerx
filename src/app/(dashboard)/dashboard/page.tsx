@@ -490,14 +490,16 @@ export default function DashboardPage() {
 function NextROICard({ investments }: { investments: any[] }) {
   const [countdown, setCountdown] = useState({ h: 0, m: 0, s: 0 });
   const [nextROI, setNextROI] = useState(0);
+  const [now, setNow] = useState(new Date());
 
   useEffect(() => {
     const calcNextROI = () => {
-      const now = new Date();
-      const tomorrow = new Date(now);
+      const current = new Date();
+      setNow(current);
+      const tomorrow = new Date(current);
       tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
       tomorrow.setUTCHours(0, 0, 0, 0);
-      const diff = tomorrow.getTime() - now.getTime();
+      const diff = tomorrow.getTime() - current.getTime();
       const h = Math.floor(diff / (1000 * 60 * 60));
       const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const s = Math.floor((diff % (1000 * 60)) / 1000);
@@ -547,8 +549,8 @@ function NextROICard({ investments }: { investments: any[] }) {
             {/* Hour hand */}
             <line
               x1="50" y1="50"
-              x2={50 + 22 * Math.cos(((countdown.h % 12) * 30 + countdown.m * 0.5 - 90) * Math.PI / 180)}
-              y2={50 + 22 * Math.sin(((countdown.h % 12) * 30 + countdown.m * 0.5 - 90) * Math.PI / 180)}
+              x2={50 + 22 * Math.cos(((now.getHours() % 12) * 30 + now.getMinutes() * 0.5 - 90) * Math.PI / 180)}
+              y2={50 - 22 * Math.sin(((now.getHours() % 12) * 30 + now.getMinutes() * 0.5 - 90) * Math.PI / 180)}
               stroke="#e4e4e7"
               strokeWidth="3"
               strokeLinecap="round"
@@ -557,8 +559,8 @@ function NextROICard({ investments }: { investments: any[] }) {
             {/* Minute hand */}
             <line
               x1="50" y1="50"
-              x2={50 + 30 * Math.cos((countdown.m * 6 + countdown.s * 0.1 - 90) * Math.PI / 180)}
-              y2={50 + 30 * Math.sin((countdown.m * 6 + countdown.s * 0.1 - 90) * Math.PI / 180)}
+              x2={50 + 30 * Math.cos((now.getMinutes() * 6 + now.getSeconds() * 0.1 - 90) * Math.PI / 180)}
+              y2={50 - 30 * Math.sin((now.getMinutes() * 6 + now.getSeconds() * 0.1 - 90) * Math.PI / 180)}
               stroke="#a1a1aa"
               strokeWidth="2"
               strokeLinecap="round"
@@ -567,8 +569,8 @@ function NextROICard({ investments }: { investments: any[] }) {
             {/* Second hand */}
             <line
               x1="50" y1="50"
-              x2={50 + 32 * Math.cos((countdown.s * 6 - 90) * Math.PI / 180)}
-              y2={50 + 32 * Math.sin((countdown.s * 6 - 90) * Math.PI / 180)}
+              x2={50 + 32 * Math.cos((now.getSeconds() * 6 - 90) * Math.PI / 180)}
+              y2={50 - 32 * Math.sin((now.getSeconds() * 6 - 90) * Math.PI / 180)}
               stroke="#22c55e"
               strokeWidth="1"
               strokeLinecap="round"

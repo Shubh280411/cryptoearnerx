@@ -7,6 +7,10 @@
   --foreground: #fafafa;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -15,21 +19,137 @@ body {
 ::-webkit-scrollbar {
   width: 6px;
 }
-
 ::-webkit-scrollbar-track {
   background: #18181b;
 }
-
 ::-webkit-scrollbar-thumb {
   background: #3f3f46;
   border-radius: 3px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
   background: #52525b;
 }
-
 * {
   scrollbar-width: thin;
   scrollbar-color: #3f3f46 #18181b;
+}
+
+/* === Hero Particles === */
+.hero-particle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: particleFloat linear infinite;
+}
+@keyframes particleFloat {
+  0% { transform: translateY(0) translateX(0) scale(0); opacity: 0; }
+  15% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 0.3; }
+  85% { opacity: 0.5; }
+  100% { transform: translateY(-120vh) translateX(40px) scale(0.6); opacity: 0; }
+}
+
+/* === Glow Pulse === */
+.glow-pulse {
+  animation: glowPulse 3s ease-in-out infinite;
+}
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3), 0 0 60px rgba(59, 130, 246, 0.1); }
+  50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.5), 0 0 80px rgba(59, 130, 246, 0.2); }
+}
+
+/* === Gradient Text === */
+.gradient-text {
+  background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6, #facc15);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientShift 6s ease-in-out infinite;
+}
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* === Animated Border Gradient === */
+.gradient-border {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #3b82f6, #a855f7, #ec4899, #3b82f6);
+  background-size: 300% 300%;
+  animation: gradientShift 4s ease-in-out infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* === Glass Card === */
+.glass-card {
+  background: rgba(24, 24, 27, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(63, 63, 70, 0.3);
+  transition: all 0.3s ease;
+}
+.glass-card:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(59, 130, 246, 0.1);
+}
+
+/* === CTA Gradient Background === */
+.cta-gradient {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(168, 85, 247, 0.15), rgba(236, 72, 153, 0.15));
+  background-size: 300% 300%;
+  animation: gradientShift 8s ease-in-out infinite;
+}
+
+/* === Floating Badge === */
+.float-badge {
+  animation: floatBadge 3s ease-in-out infinite;
+}
+@keyframes floatBadge {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* === Counter Number === */
+.counter-number {
+  font-variant-numeric: tabular-nums;
+}
+
+/* === Package Card Hover === */
+.package-card {
+  transition: all 0.3s ease;
+}
+.package-card:hover {
+  transform: translateY(-8px) scale(1.02);
+}
+
+/* === Node Pulse (Binary Tree) === */
+.node-pulse {
+  animation: nodePulse 2s ease-in-out infinite;
+}
+@keyframes nodePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+}
+
+/* === Connecting Line === */
+.connect-line {
+  background: linear-gradient(to bottom, #3b82f6, transparent);
+  animation: lineGrow 1.5s ease-out forwards;
+}
+@keyframes lineGrow {
+  from { height: 0; opacity: 0; }
+  to { height: 100%; opacity: 1; }
 }

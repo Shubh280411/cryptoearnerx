@@ -554,7 +554,7 @@ function NextROICard({ investments }: { investments: any[] }) {
               stroke="#e4e4e7"
               strokeWidth="3"
               strokeLinecap="round"
-              style={{ transformOrigin: "50px 50px", transform: `rotate(${(now.getHours() % 12) * 30 + now.getMinutes() * 0.5}deg)` }}
+              transform={`rotate(${(now.getHours() % 12) * 30 + now.getMinutes() * 0.5} 50 50)`}
             />
 
             {/* Minute hand */}
@@ -565,7 +565,7 @@ function NextROICard({ investments }: { investments: any[] }) {
               stroke="#a1a1aa"
               strokeWidth="2"
               strokeLinecap="round"
-              style={{ transformOrigin: "50px 50px", transform: `rotate(${now.getMinutes() * 6 + now.getSeconds() * 0.1}deg)` }}
+              transform={`rotate(${now.getMinutes() * 6 + now.getSeconds() * 0.1} 50 50)`}
             />
 
             {/* Second hand */}
@@ -576,7 +576,7 @@ function NextROICard({ investments }: { investments: any[] }) {
               stroke="#22c55e"
               strokeWidth="1"
               strokeLinecap="round"
-              style={{ transformOrigin: "50px 50px", transform: `rotate(${now.getSeconds() * 6}deg)` }}
+              transform={`rotate(${now.getSeconds() * 6} 50 50)`}
             />
 
             {/* Center dot */}

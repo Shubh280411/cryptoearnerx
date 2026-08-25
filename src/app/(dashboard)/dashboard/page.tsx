@@ -550,7 +550,7 @@ function NextROICard({ investments }: { investments: any[] }) {
             <line
               x1="50" y1="50"
               x2={50 + 22 * Math.cos(((now.getHours() % 12) * 30 + now.getMinutes() * 0.5 - 90) * Math.PI / 180)}
-              y2={50 - 22 * Math.sin(((now.getHours() % 12) * 30 + now.getMinutes() * 0.5 - 90) * Math.PI / 180)}
+              y2={50 + 22 * Math.sin(((now.getHours() % 12) * 30 + now.getMinutes() * 0.5 - 90) * Math.PI / 180)}
               stroke="#e4e4e7"
               strokeWidth="3"
               strokeLinecap="round"
@@ -560,7 +560,7 @@ function NextROICard({ investments }: { investments: any[] }) {
             <line
               x1="50" y1="50"
               x2={50 + 30 * Math.cos((now.getMinutes() * 6 + now.getSeconds() * 0.1 - 90) * Math.PI / 180)}
-              y2={50 - 30 * Math.sin((now.getMinutes() * 6 + now.getSeconds() * 0.1 - 90) * Math.PI / 180)}
+              y2={50 + 30 * Math.sin((now.getMinutes() * 6 + now.getSeconds() * 0.1 - 90) * Math.PI / 180)}
               stroke="#a1a1aa"
               strokeWidth="2"
               strokeLinecap="round"
@@ -570,7 +570,7 @@ function NextROICard({ investments }: { investments: any[] }) {
             <line
               x1="50" y1="50"
               x2={50 + 32 * Math.cos((now.getSeconds() * 6 - 90) * Math.PI / 180)}
-              y2={50 - 32 * Math.sin((now.getSeconds() * 6 - 90) * Math.PI / 180)}
+              y2={50 + 32 * Math.sin((now.getSeconds() * 6 - 90) * Math.PI / 180)}
               stroke="#22c55e"
               strokeWidth="1"
               strokeLinecap="round"

@@ -2,7 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { handleApiError, checkRateLimit } from "@/lib/api/auth";
 
+export async function GET(req: NextRequest) {
+  return handleROI(req);
+}
+
 export async function POST(req: NextRequest) {
+  return handleROI(req);
+}
+
+async function handleROI(req: NextRequest) {
   try {
     const authHeader = req.headers.get("authorization");
     const cronSecret = process.env.CRON_SECRET;

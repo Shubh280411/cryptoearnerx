@@ -20,12 +20,16 @@ async function handleROI(req: NextRequest) {
     }
 
     if (!checkRateLimit("daily-roi", 2, 3600000)) {
-      return NextResponse.json({ error: "Too many requests. Cron runs once per hour max." }, { status: 429 });
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
+    const today = new Date().toISOString().split("T")[0];
+
     let investmentProcessed = 0;
+    let investmentSkipped = 0;
     let investmentErrors = 0;
     let stakingProcessed = 0;
+    let stakingSkipped = 0;
     let stakingErrors = 0;
 
     // === 1. Process Investment ROI ===
@@ -34,29 +38,32 @@ async function handleROI(req: NextRequest) {
       .select("*")
       .eq("status", "active");
 
-    for (const investment of activeInvestments || []) {
-      const endDate = new Date(investment.end_date);
-      const now = new Date();
-
-      if (now >= endDate) {
+    for (const inv of activeInvestments || []) {
+      if (new Date() >= new Date(inv.end_date)) {
         await supabaseAdmin
           .from("investments")
           .update({ status: "completed" })
-          .eq("id", investment.id);
+          .eq("id", inv.id);
         continue;
       }
 
-      if (investment.roi_enabled === false) {
+      if (inv.roi_enabled === false) {
+        investmentSkipped++;
         continue;
       }
 
-      const dailyROI = investment.amount * (investment.daily_roi / 100);
-      const isCex = investment.investment_source === "cex";
+      if (inv.last_roi_date === today) {
+        investmentSkipped++;
+        continue;
+      }
+
+      const dailyROI = Number(inv.amount) * (Number(inv.daily_roi) / 100);
+      const isCex = inv.investment_source === "cex";
       const rpcFn = isCex ? "credit_bonus" : "credit_wallet";
 
       const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc(
         rpcFn,
-        { p_user_id: investment.user_id, p_amount: dailyROI }
+        { p_user_id: inv.user_id, p_amount: dailyROI }
       );
 
       if (rpcError || !rpcResult?.success) {
@@ -66,34 +73,36 @@ async function handleROI(req: NextRequest) {
 
       await supabaseAdmin
         .from("investments")
-        .update({ total_earned: investment.total_earned + dailyROI })
-        .eq("id", investment.id);
+        .update({
+          total_earned: Number(inv.total_earned) + dailyROI,
+          last_roi_date: today,
+        })
+        .eq("id", inv.id);
 
-      const currency = isCex ? "CEX" : "POL";
+      const balanceAfter = rpcResult.new_balance || rpcResult.new_bonus_balance;
+      const balanceBefore = rpcResult.previous_balance || (balanceAfter - dailyROI);
+
       await supabaseAdmin.from("transactions").insert({
-        user_id: investment.user_id,
+        user_id: inv.user_id,
         type: "roi_payout",
         amount: dailyROI,
-        balance_before: rpcResult.previous_balance || rpcResult.new_bonus_balance,
-        balance_after: rpcResult.new_balance || rpcResult.new_bonus_balance,
-        description: `Daily ROI - ${investment.package_type} package (${currency})`,
+        balance_before: balanceBefore,
+        balance_after: balanceAfter,
+        description: `Daily ROI - ${inv.package_type} (${isCex ? "CEX" : "POL"}) - ${dailyROI.toFixed(4)} ${isCex ? "CEX" : "POL"}`,
         status: "completed",
       });
 
       investmentProcessed++;
     }
 
-    // === 2. Process CEX Staking ROI (pays in POL) ===
+    // === 2. Process Staking ROI (pays in POL) ===
     const { data: activeStakes } = await supabaseAdmin
       .from("staking")
       .select("*")
       .eq("status", "active");
 
     for (const stake of activeStakes || []) {
-      const endDate = new Date(stake.end_date);
-      const now = new Date();
-
-      if (now >= endDate) {
+      if (new Date() >= new Date(stake.end_date)) {
         await supabaseAdmin
           .from("staking")
           .update({ status: "completed" })
@@ -101,8 +110,17 @@ async function handleROI(req: NextRequest) {
         continue;
       }
 
-      // daily_roi here is the POL % earned per day on staked amount
-      const dailyReward = stake.amount * (stake.daily_roi / 100);
+      if (stake.last_roi_date === today) {
+        stakingSkipped++;
+        continue;
+      }
+
+      // daily_roi column = fixed POL amount per day
+      const dailyReward = Number(stake.daily_roi) || 0;
+      if (dailyReward <= 0) {
+        stakingErrors++;
+        continue;
+      }
 
       const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc(
         "credit_wallet",
@@ -116,7 +134,10 @@ async function handleROI(req: NextRequest) {
 
       await supabaseAdmin
         .from("staking")
-        .update({ rewards_earned: (stake.rewards_earned || 0) + dailyReward })
+        .update({
+          rewards_earned: Number(stake.rewards_earned || 0) + dailyReward,
+          last_roi_date: today,
+        })
         .eq("id", stake.id);
 
       await supabaseAdmin.from("transactions").insert({
@@ -125,21 +146,28 @@ async function handleROI(req: NextRequest) {
         amount: dailyReward,
         balance_before: rpcResult.previous_balance,
         balance_after: rpcResult.new_balance,
-        description: `CEX Staking ROI - ${formatPOL(stake.amount)} POL staked`,
+        description: `Staking ROI - ${Number(stake.amount).toFixed(4)} POL staked`,
         status: "completed",
       });
 
       stakingProcessed++;
     }
 
-    function formatPOL(n: number) {
-      return Number(n).toFixed(4);
-    }
-
     return NextResponse.json({
       success: true,
-      investments: { processed: investmentProcessed, errors: investmentErrors, total: activeInvestments?.length || 0 },
-      staking: { processed: stakingProcessed, errors: stakingErrors, total: activeStakes?.length || 0 },
+      date: today,
+      investments: {
+        processed: investmentProcessed,
+        skipped: investmentSkipped,
+        errors: investmentErrors,
+        total: activeInvestments?.length || 0,
+      },
+      staking: {
+        processed: stakingProcessed,
+        skipped: stakingSkipped,
+        errors: stakingErrors,
+        total: activeStakes?.length || 0,
+      },
     });
   } catch (error) {
     return handleApiError(error);

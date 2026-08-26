@@ -61,10 +61,12 @@ async function handleROI(req: NextRequest) {
       const isCex = inv.investment_source === "cex";
       const rpcFn = isCex ? "credit_bonus" : "credit_wallet";
 
-      const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc(
+      const { data: rpcRaw, error: rpcError } = await supabaseAdmin.rpc(
         rpcFn,
         { p_user_id: inv.user_id, p_amount: dailyROI }
       );
+
+      const rpcResult = Array.isArray(rpcRaw) ? rpcRaw[0] : rpcRaw;
 
       if (rpcError || !rpcResult?.success) {
         investmentErrors++;
@@ -80,7 +82,7 @@ async function handleROI(req: NextRequest) {
         .eq("id", inv.id);
 
       const balanceAfter = rpcResult.new_balance || rpcResult.new_bonus_balance;
-      const balanceBefore = rpcResult.previous_balance || (balanceAfter - dailyROI);
+      const balanceBefore = rpcResult.previous_balance ?? (balanceAfter - dailyROI);
 
       await supabaseAdmin.from("transactions").insert({
         user_id: inv.user_id,
@@ -122,10 +124,12 @@ async function handleROI(req: NextRequest) {
         continue;
       }
 
-      const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc(
+      const { data: stakeRaw, error: rpcError } = await supabaseAdmin.rpc(
         "credit_wallet",
         { p_user_id: stake.user_id, p_amount: dailyReward }
       );
+
+      const rpcResult = Array.isArray(stakeRaw) ? stakeRaw[0] : stakeRaw;
 
       if (rpcError || !rpcResult?.success) {
         stakingErrors++;

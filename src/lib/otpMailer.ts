@@ -41,7 +41,7 @@ export async function sendOTPEmail(email: string, otp: string, purpose: string =
 
     await transporter.sendMail({
       from: `"CryptoEarnerX" <${process.env.SMTP_USER}>`,
-      replyTo: `"CryptoEarnerX Support" <${process.env.SMTP_USER}>`,
+      replyTo: `"CryptoEarnerX Support" <support@cryptoearnerx.online>`,
       to: email,
       subject: `[CryptoEarnerX] Your ${purposeText} Code: ${otp}`,
       headers: {
